@@ -1,0 +1,22 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: myreadings-rabbitmq
+  labels:
+    app.kubernetes.io/part-of: myreadings
+spec:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  persistence:
+    storage: 5Gi
+  rabbitmq:
+    additionalPlugins:
+      - rabbitmq_management
+    additionalConfig: |
+      default_vhost = my-readings

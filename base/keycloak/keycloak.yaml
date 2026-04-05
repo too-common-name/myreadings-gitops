@@ -1,0 +1,36 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: myreadings-keycloak
+  labels:
+    app.kubernetes.io/part-of: myreadings
+spec:
+  instances: 1
+  hostname:
+    hostname: ""
+  http:
+    httpEnabled: true
+  db:
+    vendor: postgres
+    host: myreadings-db-primary
+    port: 5432
+    database: keycloak_db
+    usernameSecret:
+      name: myreadings-db-pguser-keycloak-user
+      key: user
+    passwordSecret:
+      name: myreadings-db-pguser-keycloak-user
+      key: password
+  proxy:
+    headers: xforwarded
+  unsupported:
+    podTemplate:
+      spec:
+        containers:
+          - resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                cpu: 500m
+                memory: 1Gi

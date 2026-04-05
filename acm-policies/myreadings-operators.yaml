@@ -66,12 +66,7 @@ spec:
           remediationAction: enforce
           complianceType: musthave
           upgradeApproval: Automatic
-          operatorGroup:
-            name: rhbk-operator-group
-            targetNamespaces:
-              - keycloak-system
           subscription:
-            namespace: keycloak-system
             channel: stable-v26.4
             name: rhbk-operator
             source: redhat-operators

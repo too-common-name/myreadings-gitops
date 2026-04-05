@@ -1,0 +1,50 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: myreadings-db
+  labels:
+    app.kubernetes.io/part-of: myreadings
+spec:
+  postgresVersion: 16
+
+  instances:
+    - name: instance1
+      replicas: 1
+      dataVolumeClaimSpec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+
+  backups:
+    pgbackrest:
+      repos:
+        - name: repo1
+          volume:
+            volumeClaimSpec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 5Gi
+
+  # CrunchyData auto-creates the databases listed here
+  users:
+    - name: myreadings-user
+      databases:
+        - books_db
+        - users_db
+        - review_db
+        - readinglist_db
+      options: "SUPERUSER"
+    - name: keycloak-user
+      databases:
+        - keycloak_db
