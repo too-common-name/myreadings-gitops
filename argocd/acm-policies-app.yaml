@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: myreadings-acm-policies
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: myreadings-platform
+  source:
+    repoURL: https://github.com/too-common-name/myreadings-gitops.git
+    targetRevision: HEAD
+    path: acm-policies
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: acm-policies
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true

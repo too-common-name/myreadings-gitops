@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myreadings-app
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: myreadings-app
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myreadings-ui
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: myreadings-ui
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: myreadings
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: "Application project for MyReadings workloads"
+
+  sourceRepos:
+    - https://github.com/too-common-name/myreadings-gitops.git
+
+  destinations:
+    - namespace: "myreadings-*"
+      server: "*"
+
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: "*"
+    - group: apps
+      kind: Deployment
+    - group: route.openshift.io
+      kind: Route
+    - group: postgres-operator.crunchydata.com
+      kind: PostgresCluster
+    - group: k8s.keycloak.org
+      kind: Keycloak
+    - group: k8s.keycloak.org
+      kind: KeycloakRealmImport
+    - group: rabbitmq.com
+      kind: RabbitmqCluster
+
+  roles:
+    - name: myreadings-deployer
+      description: "Sync permissions for MyReadings deployments"
+      policies:
+        - p, proj:myreadings:myreadings-deployer, applications, get, myreadings/*, allow
+        - p, proj:myreadings:myreadings-deployer, applications, sync, myreadings/*, allow
+      groups:
+        - cluster-admins

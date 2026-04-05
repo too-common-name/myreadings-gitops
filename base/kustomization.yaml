@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - postgres/postgrescluster.yaml
+  - keycloak/keycloak.yaml
+  - rabbitmq/rabbitmqcluster.yaml
+  - monolith/configmap.yaml
+  - monolith/deployment.yaml
+  - monolith/service.yaml
+  - monolith/route.yaml
+  - ui/configmap-nginx.yaml
+  - ui/deployment.yaml
+  - ui/service.yaml
+  - ui/route.yaml

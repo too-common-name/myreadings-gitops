@@ -1,0 +1,93 @@
+# ======================================================================
+# PART 1: Placement & Binding
+# Targets any managed cluster labeled myreadings: "true"
+# ======================================================================
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: myreadings-operators-placement
+  namespace: acm-policies
+spec:
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            myreadings: "true"
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: myreadings-operator-binding
+  namespace: acm-policies
+placementRef:
+  name: myreadings-operators-placement
+  kind: Placement
+  apiGroup: cluster.open-cluster-management.io
+subjects:
+  - name: policy-myreadings-operators
+    kind: Policy
+    apiGroup: policy.open-cluster-management.io
+---
+# ======================================================================
+# PART 2: Operator Installation (Using OperatorPolicy)
+# Installs CrunchyData PostgreSQL, Keycloak, and RabbitMQ operators
+# ======================================================================
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  name: policy-myreadings-operators
+  namespace: acm-policies
+spec:
+  remediationAction: enforce
+  disabled: false
+  policy-templates:
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1beta1
+        kind: OperatorPolicy
+        metadata:
+          name: crunchy-postgres-policy
+        spec:
+          severity: high
+          remediationAction: enforce
+          complianceType: musthave
+          upgradeApproval: Automatic
+          subscription:
+            channel: v5
+            name: crunchy-postgres-operator
+            source: certified-operators
+            sourceNamespace: openshift-marketplace
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1beta1
+        kind: OperatorPolicy
+        metadata:
+          name: myreadings-rhbk-operator-policy
+        spec:
+          severity: high
+          remediationAction: enforce
+          complianceType: musthave
+          upgradeApproval: Automatic
+          operatorGroup:
+            name: rhbk-operator-group
+            targetNamespaces:
+              - keycloak-system
+          subscription:
+            namespace: keycloak-system
+            channel: stable-v26.4
+            name: rhbk-operator
+            source: redhat-operators
+            sourceNamespace: openshift-marketplace
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1beta1
+        kind: OperatorPolicy
+        metadata:
+          name: rabbitmq-operator-policy
+        spec:
+          severity: high
+          remediationAction: enforce
+          complianceType: musthave
+          upgradeApproval: Automatic
+          subscription:
+            channel: stable
+            name: rabbitmq-cluster-operator
+            source: community-operators
+            sourceNamespace: openshift-marketplace
