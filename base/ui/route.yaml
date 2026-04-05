@@ -1,0 +1,16 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: myreadings-ui
+  labels:
+    app.kubernetes.io/name: myreadings-ui
+    app.kubernetes.io/part-of: myreadings
+spec:
+  to:
+    kind: Service
+    name: myreadings-ui
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

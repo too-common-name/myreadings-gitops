@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myreadings-app
+  labels:
+    app.kubernetes.io/name: myreadings-app
+    app.kubernetes.io/part-of: myreadings
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: myreadings-app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: myreadings-app
+        app.kubernetes.io/part-of: myreadings
+    spec:
+      containers:
+        - name: myreadings-app
+          image: quay.io/too-common-name/myreadings-app:latest
+          ports:
+            - containerPort: 8081
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: myreadings-app-config
+          env:
+            # PostgreSQL (from CrunchyData operator Secret)
+            - name: POSTGRES_HOSTNAME
+              valueFrom:
+                secretKeyRef:
+                  name: myreadings-db-pguser-myreadings-user
+                  key: host
+            - name: POSTGRES_PORT_CONTAINER
+              valueFrom:
+                secretKeyRef:
+                  name: myreadings-db-pguser-myreadings-user
+                  key: port
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: myreadings-db-pguser-myreadings-user
+                  key: user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: myreadings-db-pguser-myreadings-user
+                  key: password
+            # Keycloak
+            - name: KEYCLOAK_HOSTNAME
+              value: myreadings-keycloak-service
+            - name: KC_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: myreadings-keycloak-initial-admin
+                  key: password
+            # RabbitMQ (from operator Secret)
+            - name: RABBITMQ_HOSTNAME
+              valueFrom:
+                secretKeyRef:
+                  name: myreadings-rabbitmq-default-user
+                  key: host
+            - name: RABBITMQ_PORT_CONTAINER
+              valueFrom:
+                secretKeyRef:
+                  name: myreadings-rabbitmq-default-user
+                  key: port
+            - name: RABBITMQ_APP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: myreadings-rabbitmq-default-user
+                  key: username
+            - name: RABBITMQ_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: myreadings-rabbitmq-default-user
+                  key: password
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: 8081
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: myreadings-app-config
+  labels:
+    app.kubernetes.io/name: myreadings-app
+    app.kubernetes.io/part-of: myreadings
+data:
+  KEYCLOAK_PORT_CONTAINER: "8080"
+  KEYCLOAK_REALM: my-readings
+  KEYCLOAK_CLIENT_ID: myreadings-client
+  RABBITMQ_VHOST: my-readings
+  RABBITMQ_QUEUE_NAME: myreadings-queue
+  RABBITMQ_BINDING_KEY: KK.EVENT.CLIENT.my-readings.SUCCESS.myreadings-client.REGISTER
+  USER_SERVICE_URL: http://myreadings-user-service:8083
