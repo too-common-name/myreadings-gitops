@@ -1,0 +1,7 @@
+collections:
+  - name: community.rabbitmq
+    version: "1.6.0"
+  - name: middleware_automation.keycloak
+    version: "3.0.2"
+  - name: kubernetes.core
+    version: "5.0.0"

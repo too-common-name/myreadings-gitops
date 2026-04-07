@@ -1,0 +1,10 @@
+ARG EE_BASE_IMAGE=registry.redhat.io/ansible-automation-platform-25/ee-minimal-rhel9:latest
+FROM $EE_BASE_IMAGE
+
+USER root
+COPY requirements.yml /tmp/requirements.yml
+RUN ansible-galaxy collection install --no-deps --force \
+      -r /tmp/requirements.yml \
+      --collections-path /usr/share/ansible/collections && \
+    rm /tmp/requirements.yml
+USER 1000

@@ -1,0 +1,22 @@
+apiVersion: tower.ansible.com/v1alpha1
+kind: JobTemplate
+metadata:
+  name: myreadings-configure-rabbitmq
+  namespace: ansible-automation-platform
+  labels:
+    app.kubernetes.io/part-of: myreadings
+spec:
+  name: myreadings-configure-rabbitmq
+  connection_secret: aap-connection
+  organization: Default
+  project: myreadings-gitops
+  playbook: ansible/configure-rabbitmq.yml
+  inventory: Demo Inventory
+  execution_environment: myreadings-ee
+  extra_vars:
+    app_namespace: myreadings-dev
+    rabbitmq_vhost_name: my-readings
+    rabbitmq_application_user: myreadings-user
+    rabbitmq_application_password: myreadings-user
+    rabbitmq_queue: myreadings-queue
+    rabbitmq_routing_key: "KK.EVENT.CLIENT.my-readings.SUCCESS.myreadings-client.REGISTER"

@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: myreadings-aap-config
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    app.kubernetes.io/part-of: myreadings
+spec:
+  project: myreadings
+  source:
+    repoURL: https://github.com/too-common-name/myreadings-gitops.git
+    targetRevision: HEAD
+    path: base/aap
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: myreadings-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true

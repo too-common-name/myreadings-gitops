@@ -1,0 +1,8 @@
+---
+rabbitmq_mgmt_port: 15672
+
+rabbitmq_vhost: "{{ rabbitmq_vhost_name | default('my-readings') }}"
+rabbitmq_app_user: "{{ rabbitmq_application_user | default('myreadings-user') }}"
+rabbitmq_app_password: "{{ rabbitmq_application_password | default('myreadings-user') }}"
+rabbitmq_queue_name: "{{ rabbitmq_queue | default('myreadings-queue') }}"
+rabbitmq_binding_key: "{{ rabbitmq_routing_key | default('KK.EVENT.CLIENT.my-readings.SUCCESS.myreadings-client.REGISTER') }}"

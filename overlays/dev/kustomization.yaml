@@ -9,4 +9,5 @@ resources:
   - ../../base
 
 patches:
-  - path: patches/resource-limits.yaml
+  - path: patches/resource-limits-app.yaml
+  - path: patches/resource-limits-ui.yaml

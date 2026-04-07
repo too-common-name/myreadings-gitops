@@ -1,0 +1,66 @@
+---
+- name: Wait for Keycloak API to be ready
+  ansible.builtin.uri:
+    url: "{{ keycloak_admin_url }}/realms/master"
+    status_code: 200
+  register: result
+  until: result.status == 200
+  retries: 30
+  delay: 5
+
+- name: Create or update Keycloak realm {{ keycloak_realm }}
+  middleware_automation.keycloak.keycloak_realm:
+    auth_keycloak_url: "{{ keycloak_admin_url }}"
+    auth_realm: "master"
+    auth_client_id: "admin-cli"
+    auth_username: "{{ keycloak_admin_user }}"
+    auth_password: "{{ keycloak_admin_password }}"
+    id: "{{ keycloak_realm }}"
+    realm: "{{ keycloak_realm }}"
+    state: present
+    enabled: true
+    registration_allowed: "{{ keycloak_self_registration }}"
+    events_listeners:
+      - jboss-logging
+      - keycloak-to-rabbitmq
+    admin_events_enabled: true
+    events_enabled: true
+    login_theme: myreadings-theme
+    default_roles:
+      - user
+
+- name: Create or update Keycloak client
+  middleware_automation.keycloak.keycloak_client:
+    auth_keycloak_url: "{{ keycloak_admin_url }}"
+    auth_realm: "master"
+    auth_client_id: "admin-cli"
+    auth_username: "{{ keycloak_admin_user }}"
+    auth_password: "{{ keycloak_admin_password }}"
+    realm: "{{ keycloak_realm }}"
+    client_id: "{{ keycloak_client_id }}"
+    name: "{{ keycloak_client_name }}"
+    root_url: "{{ myreadings_root_url }}"
+    redirect_uris: "{{ myreadings_redirect_uris }}"
+    web_origins:
+      - "{{ myreadings_root_url }}"
+    public_client: true
+    standard_flow_enabled: true
+    direct_access_grants_enabled: false
+    implicit_flow_enabled: false
+    attributes:
+      pkce.code.challenge.method: "S256"
+    state: present
+
+- name: Create Keycloak realm roles
+  middleware_automation.keycloak.keycloak_role:
+    auth_keycloak_url: "{{ keycloak_admin_url }}"
+    auth_realm: "master"
+    auth_client_id: "admin-cli"
+    auth_username: "{{ keycloak_admin_user }}"
+    auth_password: "{{ keycloak_admin_password }}"
+    realm: "{{ keycloak_realm }}"
+    name: "{{ item }}"
+    state: present
+  loop:
+    - user
+    - admin

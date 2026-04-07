@@ -1,0 +1,11 @@
+---
+keycloak_admin_url: "http://myreadings-keycloak-service.{{ app_namespace }}.svc:8080"
+
+keycloak_realm: "{{ keycloak_realm_name | default('my-readings') }}"
+keycloak_client_id: "{{ keycloak_client | default('myreadings-client') }}"
+keycloak_client_name: "{{ keycloak_client_display_name | default('My Readings Application') }}"
+keycloak_self_registration: "{{ keycloak_allow_registration | default(true) }}"
+
+myreadings_root_url: "{{ frontend_url }}"
+myreadings_redirect_uris:
+  - "{{ frontend_url }}/*"

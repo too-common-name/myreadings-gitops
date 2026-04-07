@@ -1,0 +1,57 @@
+---
+- name: Wait for RabbitMQ management API to be ready
+  ansible.builtin.uri:
+    url: "http://{{ login_host }}:{{ rabbitmq_mgmt_port }}"
+    status_code: 200
+  register: result
+  until: result.status == 200
+  retries: 30
+  delay: 5
+
+- name: Create the application vhost
+  community.rabbitmq.rabbitmq_vhost:
+    login_host: "{{ login_host }}"
+    login_port: "{{ rabbitmq_mgmt_port }}"
+    login_user: "{{ login_user }}"
+    login_password: "{{ login_password }}"
+    name: "{{ rabbitmq_vhost }}"
+    state: present
+
+- name: Create application user and set permissions
+  community.rabbitmq.rabbitmq_user:
+    login_host: "{{ login_host }}"
+    login_port: "{{ rabbitmq_mgmt_port }}"
+    login_user: "{{ login_user }}"
+    login_password: "{{ login_password }}"
+    user: "{{ rabbitmq_app_user }}"
+    password: "{{ rabbitmq_app_password }}"
+    permissions:
+      - vhost: "{{ rabbitmq_vhost }}"
+        configure: ".*"
+        write: ".*"
+        read: ".*"
+    state: present
+
+- name: Create the application queue
+  community.rabbitmq.rabbitmq_queue:
+    login_host: "{{ login_host }}"
+    login_port: "{{ rabbitmq_mgmt_port }}"
+    login_user: "{{ login_user }}"
+    login_password: "{{ login_password }}"
+    name: "{{ rabbitmq_queue_name }}"
+    vhost: "{{ rabbitmq_vhost }}"
+    durable: true
+    state: present
+
+- name: Bind the queue for Keycloak events
+  community.rabbitmq.rabbitmq_binding:
+    login_host: "{{ login_host }}"
+    login_port: "{{ rabbitmq_mgmt_port }}"
+    login_user: "{{ login_user }}"
+    login_password: "{{ login_password }}"
+    name: "amq.topic"
+    destination: "{{ rabbitmq_queue_name }}"
+    destination_type: queue
+    routing_key: "{{ rabbitmq_binding_key }}"
+    vhost: "{{ rabbitmq_vhost }}"
+    state: present

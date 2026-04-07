@@ -1,0 +1,23 @@
+---
+- name: Configure RabbitMQ on OpenShift
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  pre_tasks:
+    - name: Read RabbitMQ default user credentials from k8s Secret
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Secret
+        name: myreadings-rabbitmq-default-user
+        namespace: "{{ app_namespace }}"
+      register: rmq_secret
+
+    - name: Set RabbitMQ credentials from Secret
+      ansible.builtin.set_fact:
+        login_host: "{{ rmq_secret.resources[0].data.host | b64decode }}"
+        login_user: "{{ rmq_secret.resources[0].data.username | b64decode }}"
+        login_password: "{{ rmq_secret.resources[0].data.password | b64decode }}"
+
+  roles:
+    - ocp_rabbitmq_config

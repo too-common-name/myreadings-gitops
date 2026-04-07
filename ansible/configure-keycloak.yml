@@ -1,0 +1,22 @@
+---
+- name: Configure Keycloak on OpenShift
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  pre_tasks:
+    - name: Read Keycloak admin credentials from k8s Secret
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Secret
+        name: myreadings-keycloak-initial-admin
+        namespace: "{{ app_namespace }}"
+      register: kc_secret
+
+    - name: Set Keycloak credentials from Secret
+      ansible.builtin.set_fact:
+        keycloak_admin_user: "{{ kc_secret.resources[0].data.username | b64decode }}"
+        keycloak_admin_password: "{{ kc_secret.resources[0].data.password | b64decode }}"
+
+  roles:
+    - ocp_keycloak_config
