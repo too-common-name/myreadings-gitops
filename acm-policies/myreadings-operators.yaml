@@ -95,6 +95,42 @@ spec:
         apiVersion: policy.open-cluster-management.io/v1beta1
         kind: OperatorPolicy
         metadata:
+          name: openshift-pipelines-policy
+        spec:
+          severity: high
+          remediationAction: enforce
+          complianceType: musthave
+          upgradeApproval: Automatic
+          subscription:
+            channel: latest
+            name: openshift-pipelines-operator-rh
+            source: redhat-operators
+            sourceNamespace: openshift-marketplace
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1beta1
+        kind: OperatorPolicy
+        metadata:
+          name: ansible-operator-policy
+        spec:
+          severity: low
+          remediationAction: enforce
+          complianceType: musthave
+          upgradeApproval: Automatic
+          operatorGroup:
+            name: ansible-automation-platform-group
+            namespace: ansible-automation-platform
+            targetNamespaces:
+              - ansible-automation-platform
+          subscription:
+            namespace: ansible-automation-platform
+            channel: stable-2.6
+            name: ansible-automation-platform-operator
+            source: redhat-operators
+            sourceNamespace: openshift-marketplace
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1beta1
+        kind: OperatorPolicy
+        metadata:
           name: rabbitmq-operator-policy
         spec:
           severity: high
