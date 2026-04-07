@@ -3,6 +3,8 @@ kind: JobTemplate
 metadata:
   name: myreadings-configure-rabbitmq
   namespace: ansible-automation-platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
   labels:
     app.kubernetes.io/part-of: myreadings
 spec:
