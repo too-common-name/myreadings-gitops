@@ -1,0 +1,92 @@
+# ======================================================================
+# AAP Instance Configuration
+# Creates the AnsibleAutomationPlatform CR after operator is ready
+# ======================================================================
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: myreadings-aap-config-binding
+  namespace: acm-policies
+placementRef:
+  name: myreadings-operators-placement
+  kind: Placement
+  apiGroup: cluster.open-cluster-management.io
+subjects:
+  - name: policy-myreadings-aap-config
+    kind: Policy
+    apiGroup: policy.open-cluster-management.io
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  name: policy-myreadings-aap-config
+  namespace: acm-policies
+spec:
+  remediationAction: enforce
+  disabled: false
+  dependencies:
+    - apiVersion: policy.open-cluster-management.io/v1
+      kind: Policy
+      name: policy-myreadings-operators
+      namespace: acm-policies
+      compliance: Compliant
+  policy-templates:
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: aap-controller-instance
+        spec:
+          remediationAction: enforce
+          severity: high
+          object-templates:
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: aap.ansible.com/v1alpha1
+                kind: AnsibleAutomationPlatform
+                metadata:
+                  name: aap
+                  namespace: ansible-automation-platform
+                spec:
+                  route_tls_termination_mechanism: Edge
+                  no_log: true
+                  redis_mode: standalone
+                  api:
+                    log_level: INFO
+                    replicas: 1
+                    resource_requirements:
+                      requests:
+                        cpu: "100m"
+                        memory: "1500Mi"
+                  controller:
+                    task_resource_requirements:
+                      requests:
+                        cpu: "350m"
+                        memory: "384Mi"
+                    web_resource_requirements:
+                      requests:
+                        cpu: "250m"
+                        memory: "320Mi"
+                  hub:
+                    file_storage_storage_class: "ocs-external-storagecluster-cephfs"
+                    content:
+                      resource_requirements:
+                        requests:
+                          cpu: "200m"
+                          memory: "512Mi"
+                    web:
+                      resource_requirements:
+                        requests:
+                          cpu: "200m"
+                          memory: "512Mi"
+                  eda:
+                    disabled: true
+                  database:
+                    postgres_data_volume_init: false
+                    idle_disabled: false
+                    resource_requirements:
+                      requests:
+                        cpu: "200m"
+                        memory: "512Mi"
+                  service_type: ClusterIP
+                  ingress_type: Route
