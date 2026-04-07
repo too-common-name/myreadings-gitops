@@ -8,4 +8,7 @@ RUN pip3 install --no-cache-dir kubernetes requests && \
       -r /tmp/requirements.yml \
       --collections-path /usr/share/ansible/collections && \
     rm /tmp/requirements.yml
+
+COPY . /ansible
+WORKDIR /ansible
 USER 1000

@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: configure-rabbitmq
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+  labels:
+    app.kubernetes.io/part-of: myreadings
+    app.kubernetes.io/component: config
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      serviceAccountName: ansible-configurator
+      restartPolicy: Never
+      containers:
+        - name: ansible
+          image: quay.io/rh-ee-drossi/myreadings-ee:latest
+          command:
+            - ansible-playbook
+            - configure-rabbitmq.yml
+            - -e
+            - "app_namespace=myreadings-dev"
+            - -e
+            - "rabbitmq_vhost_name=my-readings"
+            - -e
+            - "rabbitmq_application_user=myreadings-user"
+            - -e
+            - "rabbitmq_application_password=myreadings-user"
+            - -e
+            - "rabbitmq_queue=myreadings-queue"
+            - -e
+            - "rabbitmq_routing_key=KK.EVENT.CLIENT.my-readings.SUCCESS.myreadings-client.REGISTER"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

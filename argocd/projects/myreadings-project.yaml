@@ -16,8 +16,6 @@ spec:
   destinations:
     - namespace: "myreadings-*"
       server: "*"
-    - namespace: "ansible-automation-platform"
-      server: "*"
 
   clusterResourceWhitelist:
     - group: ""
@@ -28,26 +26,20 @@ spec:
       kind: "*"
     - group: apps
       kind: Deployment
+    - group: batch
+      kind: Job
     - group: route.openshift.io
       kind: Route
     - group: postgres-operator.crunchydata.com
       kind: PostgresCluster
     - group: k8s.keycloak.org
       kind: Keycloak
-    - group: k8s.keycloak.org
-      kind: KeycloakRealmImport
     - group: rabbitmq.com
       kind: RabbitmqCluster
     - group: rbac.authorization.k8s.io
       kind: Role
     - group: rbac.authorization.k8s.io
       kind: RoleBinding
-    - group: tower.ansible.com
-      kind: AnsibleProject
-    - group: tower.ansible.com
-      kind: JobTemplate
-    - group: tower.ansible.com
-      kind: AnsibleJob
 
   roles:
     - name: myreadings-deployer
