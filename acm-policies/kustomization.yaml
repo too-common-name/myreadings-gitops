@@ -3,4 +3,3 @@ kind: Kustomization
 
 resources:
   - myreadings-operators.yaml
-  - myreadings-aap-config.yaml
