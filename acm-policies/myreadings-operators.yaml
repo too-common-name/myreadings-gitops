@@ -1,4 +1,16 @@
 # ======================================================================
+# PART 0: ClusterSet Binding
+# Allows Placements in acm-policies namespace to see managed clusters
+# ======================================================================
+apiVersion: cluster.open-cluster-management.io/v1beta2
+kind: ManagedClusterSetBinding
+metadata:
+  name: default
+  namespace: acm-policies
+spec:
+  clusterSet: default
+---
+# ======================================================================
 # PART 1: Placement & Binding
 # Targets any managed cluster labeled myreadings: "true"
 # ======================================================================
@@ -8,6 +20,8 @@ metadata:
   name: myreadings-operators-placement
   namespace: acm-policies
 spec:
+  clusterSets:
+    - default
   predicates:
     - requiredClusterSelector:
         labelSelector:
@@ -66,7 +80,13 @@ spec:
           remediationAction: enforce
           complianceType: musthave
           upgradeApproval: Automatic
+          operatorGroup:
+            name: rhbk-operator-group
+            namespace: rhbk-system
+            targetNamespaces:
+              - myreadings-dev
           subscription:
+            namespace: rhbk-system
             channel: stable-v26.4
             name: rhbk-operator
             source: redhat-operators
