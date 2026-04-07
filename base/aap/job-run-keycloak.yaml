@@ -1,0 +1,13 @@
+apiVersion: tower.ansible.com/v1alpha1
+kind: AnsibleJob
+metadata:
+  name: run-configure-keycloak
+  namespace: ansible-automation-platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  labels:
+    app.kubernetes.io/part-of: myreadings
+spec:
+  connection_secret: aap-connection
+  job_template_name: myreadings-configure-keycloak
+  job_ttl: 3600

@@ -6,3 +6,5 @@ resources:
   - project.yaml
   - job-template-keycloak.yaml
   - job-template-rabbitmq.yaml
+  - job-run-keycloak.yaml
+  - job-run-rabbitmq.yaml

@@ -46,6 +46,8 @@ spec:
       kind: AnsibleProject
     - group: tower.ansible.com
       kind: JobTemplate
+    - group: tower.ansible.com
+      kind: AnsibleJob
 
   roles:
     - name: myreadings-deployer
