@@ -1,0 +1,40 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: myreadings-ui-
+  labels:
+    app.kubernetes.io/part-of: myreadings
+    tekton.dev/pipeline: myreadings-build
+spec:
+  pipelineRef:
+    name: myreadings-build
+  serviceAccountName: myreadings-pipeline
+  params:
+    - name: git-url
+      value: https://github.com/too-common-name/myreadings_ui.git
+    - name: git-revision
+      value: main
+    - name: dockerfile-path
+      value: ./Dockerfile
+    - name: context-dir
+      value: "."
+    - name: image-name
+      value: myreadings-ui
+    - name: image-base-ref
+      value: quay.io/too-common-name/myreadings-ui
+    - name: overlay-path
+      value: overlays/dev
+    - name: test-enabled
+      value: "false"
+  workspaces:
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+    - name: git-credentials
+      secret:
+        secretName: github-token
