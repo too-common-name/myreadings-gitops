@@ -11,3 +11,8 @@ resources:
 patches:
   - path: patches/resource-limits-app.yaml
   - path: patches/resource-limits-ui.yaml
+
+images:
+- name: quay.io/too-common-name/myreadings-app
+  newName: image-registry.openshift-image-registry.svc:5000/myreadings-dev/myreadings-app
+  newTag: 9c62d8d7e2e9be123bf294b6fa3764f5eedb4d9a
