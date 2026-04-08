@@ -12,6 +12,7 @@ patches:
   - path: patches/resource-limits-app.yaml
   - path: patches/resource-limits-ui.yaml
   - path: patches/monolith-oidc-issuer.yaml
+  - path: patches/user-service-oidc-issuer.yaml
 
 images:
 - name: quay.io/too-common-name/myreadings-app
