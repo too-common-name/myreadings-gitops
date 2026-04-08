@@ -1,0 +1,179 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: myreadings-db-init
+  labels:
+    app.kubernetes.io/part-of: myreadings
+data:
+  init.sql: |
+    -- ============================================================
+    -- books_db: schema + seed data
+    -- ============================================================
+    \c books_db
+
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+    CREATE TABLE IF NOT EXISTS books (
+        book_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        isbn VARCHAR(20),
+        title VARCHAR(255) NOT NULL,
+        authors TEXT[],
+        publication_date DATE,
+        publisher VARCHAR(255),
+        description TEXT,
+        page_count INTEGER,
+        cover_image_id VARCHAR(255),
+        original_language VARCHAR(50),
+        genre VARCHAR(100) CHECK (
+            genre IN (
+                'Fantasy','Science Fiction','Dystopian','Adventure','Romance',
+                'Detective','Mystery','Horror','Thriller','Paranormal',
+                'Historical Fiction','Contemporary','Memoir','Biography',
+                'Autobiography','True Crime','Self Help','Health','Travel',
+                'Guide','Families & Relationships','Humor','Children''s',
+                'Poetry','Drama','Classics','Comics','Graphic Novel',
+                'Short Story','Religion','Spirituality','Science','History',
+                'Philosophy','Art','Cookbooks','Diaries','Journals','Essays',
+                'Anthology','Western','Crime','War','Political','Technical Manual'
+            )
+        )
+    );
+
+    INSERT INTO books (isbn, title, authors, publication_date, publisher, description, page_count, cover_image_id, original_language, genre)
+    SELECT * FROM (VALUES
+    ('9781401263119', 'Batman: The Dark Knight Returns', '{"Frank Miller"}', '1986-06-01', 'DC Comics', 'An aging Bruce Wayne returns to his role as Batman.', 208, 's3_url_todo', 'en', 'Comics'),
+    ('9781401207526', 'Batman: Year One', '{"Frank Miller", "David Mazzucchelli"}', '1987-02-01', 'DC Comics', 'The early days of Batman''s career.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9781401216672', 'Batman: The Killing Joke', '{"Alan Moore", "Brian Bolland"}', '1988-03-01', 'DC Comics', 'The Joker tries to drive Commissioner Gordon insane.', 64, 's3_url_todo', 'en', 'Comics'),
+    ('9791221903089', 'Batman: Hush', '{"Jeph Loeb", "Jim Lee"}', '2003-07-01', 'DC Comics', 'A mysterious new villain named Hush emerges.', 328, 's3_url_todo', 'en', 'Comics'),
+    ('9781401232597', 'Batman: The Long Halloween', '{"Jeph Loeb", "Tim Sale"}', '1996-12-01', 'DC Comics', 'Batman investigates a holiday-themed serial killer.', 368, 's3_url_todo', 'en', 'Comics'),
+    ('093028948X', 'Batman: Arkham Asylum - A Serious House on Serious Earth', '{"Grant Morrison", "Dave McKean"}', '1989-10-01', 'DC Comics', 'Batman is trapped inside Arkham Asylum during a riot.', 192, 's3_url_todo', 'en', 'Comics'),
+    ('9781785658174', 'Batman: The Court of Owls', '{"Scott Snyder", "Greg Capullo"}', '2012-05-01', 'DC Comics', 'Batman faces a secret society that has controlled Gotham for centuries.', 160, 's3_url_todo', 'en', 'Comics'),
+    ('9781401245085', 'Batman: Zero Year - Secret City', '{"Scott Snyder", "Greg Capullo"}', '2013-10-01', 'DC Comics', 'A retelling of Batman''s origin in the New 52 universe.', 160, 's3_url_todo', 'en', 'Comics'),
+    ('9781401279592', 'Batman: White Knight', '{"Sean Gordon Murphy"}', '2018-05-01', 'DC Comics', 'The Joker is seemingly cured of his madness and becomes a hero in Gotham.', 232, 's3_url_todo', 'en', 'Comics'),
+    ('9786059155595', 'Batman: Rebirth', '{"Tom King", "David Finch"}', '2016-08-01', 'DC Comics', 'The beginning of Tom King''s acclaimed run on Batman.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9781401273613', 'Batman: The War of Jokes and Riddles', '{"Tom King", "Mikel Janin"}', '2018-02-01', 'DC Comics', 'A flashback to a brutal war between the Joker and the Riddler.', 176, 's3_url_todo', 'en', 'Comics'),
+    ('9781401299583', 'Batman: City of Bane Part 1', '{"Tom King", "David Finch"}', '2019-11-01', 'DC Comics', 'Bane takes control of Gotham City.', 176, 's3_url_todo', 'en', 'Comics'),
+    ('9781779513182', 'Batman: Last Knight on Earth', '{"Scott Snyder", "Greg Capullo"}', '2020-03-01', 'DC Comics', 'An aged Bruce Wayne wakes up in a dystopian future.', 216, 's3_url_todo', 'en', 'Comics'),
+    ('9781779524058', 'Batman: Gotham by Gaslight', '{"Brian Augustyn", "Mike Mignola"}', '1989-01-01', 'DC Comics', 'Batman in Victorian-era Gotham City.', 48, 's3_url_todo', 'en', 'Comics'),
+    ('9781401216221', 'Batman: The Man Who Laughs', '{"Ed Brubaker", "Doug Mahnke"}', '2005-02-01', 'DC Comics', 'A retelling of Batman''s first encounter with the Joker.', 64, 's3_url_todo', 'en', 'Comics'),
+    ('9781401232280', 'Batman: No Man''s Land Vol. 1', '{"Various"}', '1999-03-01', 'DC Comics', 'Gotham City is declared a "No Man''s Land" after an earthquake.', 368, 's3_url_todo', 'en', 'Comics'),
+    ('9781401231450', 'Batman: Under the Red Hood', '{"Judd Winick", "Doug Mahnke"}', '2005-02-01', 'DC Comics', 'The return of a familiar face from Batman''s past.', 192, 's3_url_todo', 'en', 'Comics'),
+    ('9781401232068', 'Batman: Black Mirror', '{"Scott Snyder", "Jock"}', '2011-02-01', 'DC Comics', 'Dick Grayson as Batman faces a terrifying new threat.', 160, 's3_url_todo', 'en', 'Comics'),
+    ('9781401233423', 'Batman: Gates of Gotham', '{"Scott Snyder", "Kyle Higgins"}', '2011-09-01', 'DC Comics', 'A mystery involving Gotham''s oldest families.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9781401246025', 'Batman: Death of the Family', '{"Scott Snyder", "Greg Capullo"}', '2013-04-01', 'DC Comics', 'The Joker returns to Gotham with a vengeance against the Bat-Family.', 176, 's3_url_todo', 'en', 'Comics'),
+    ('9781401251748', 'Batman: Eternal Vol. 1', '{"Scott Snyder", "James Tynion IV"}', '2014-10-01', 'DC Comics', 'A year-long weekly Batman series.', 336, 's3_url_todo', 'en', 'Comics'),
+    ('9781401261037', 'Batman: Endgame', '{"Scott Snyder", "Greg Capullo"}', '2015-07-01', 'DC Comics', 'The Joker''s final attack on Batman.', 160, 's3_url_todo', 'en', 'Comics'),
+    ('9781401262133', 'Batman: Superheavy', '{"Scott Snyder", "Greg Capullo"}', '2016-01-01', 'DC Comics', 'Jim Gordon becomes the new Batman.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9781401276444', 'Batman: The Button', '{"Tom King", "Joshua Williamson"}', '2017-09-01', 'DC Comics', 'A crossover event with The Flash.', 96, 's3_url_todo', 'en', 'Comics'),
+    ('9781401270718', 'Batman: I Am Gotham', '{"Tom King", "David Finch"}', '2017-03-01', 'DC Comics', 'The beginning of the "I Am Gotham" storyline.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9781401271326', 'Batman: The Rebirth Deluxe Edition Book 1', '{"Tom King", "Various"}', '2018-08-01', 'DC Comics', 'Collects the first twelve issues of the Batman Rebirth series.', 336, 's3_url_todo', 'en', 'Comics'),
+    ('1563897385', 'Batman: Dark Victory', '{"Jeph Loeb", "Tim Sale"}', '1999-11-01', 'DC Comics', 'Sequel to The Long Halloween.', 384, 's3_url_todo', 'en', 'Comics'),
+    ('9781401209001', 'Batman: Hush Returns', '{"A.J. Lieberman", "Dustin Nguyen"}', '2005-03-01', 'DC Comics', 'The return of Hush.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9781401227210', 'Batman: Streets of Gotham - Hush Money', '{"Paul Dini", "Dustin Nguyen"}', '2009-07-01', 'DC Comics', 'A new threat emerges in Gotham''s underworld.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9781401259709', 'Batman: Europa', '{"Matteo Casali", "Giuseppe Camuncoli"}', '2016-04-01', 'DC Comics', 'Batman and Joker team up in Europe.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9781401232085', 'Batman: Earth One Vol. 1', '{"Geoff Johns", "Gary Frank"}', '2012-07-01', 'DC Comics', 'A modern reimagining of Batman''s origin.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9781401262518', 'Batman: Earth One Vol. 2', '{"Geoff Johns", "Gary Frank"}', '2015-05-01', 'DC Comics', 'The story continues in the Earth One universe.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9781401259044', 'Batman: Earth One Vol. 3', '{"Geoff Johns", "Gary Frank"}', '2021-06-01', 'DC Comics', 'The latest installment in the Earth One saga.', 160, 's3_url_todo', 'en', 'Comics'),
+    ('9786056496783', 'Batman: Noel', '{"Lee Bermejo"}', '2011-11-01', 'DC Comics', 'A Batman retelling of A Christmas Carol.', 112, 's3_url_todo', 'en', 'Comics'),
+    ('9781401209056', 'Batman: Gotham County Line', '{"Steve Niles", "Sam Kieth"}', '2005-10-01', 'DC Comics', 'A darker, horror-themed Batman story.', 128, 's3_url_todo', 'en', 'Comics'),
+    ('9781401224189', 'Batman: Cacophony', '{"Kevin Smith", "Walt Flanagan"}', '2009-01-01', 'DC Comics', 'A Batman story by Kevin Smith.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9781401251734', 'Batman: Eternal Vol. 2', '{"Scott Snyder", "James Tynion IV"}', '2015-03-01', 'DC Comics', 'The second volume of the weekly Batman series.', 336, 's3_url_todo', 'en', 'Comics'),
+    ('9781401256777', 'Batman: Robin Rises', '{"Peter J. Tomasi", "Patrick Gleason"}', '2015-01-01', 'DC Comics', 'The return of Damian Wayne.', 160, 's3_url_todo', 'en', 'Comics'),
+    ('9781401222451', 'Batman: Mad Love and Other Stories', '{"Paul Dini", "Bruce Timm"}', '1994-01-01', 'DC Comics', 'Collects various Batman stories featuring Harley Quinn.', 192, 's3_url_todo', 'en', 'Comics'),
+    ('9781846530968', 'The Amazing Spider-Man: The Night Gwen Stacy Died', '{"Gerry Conway", "Gil Kane"}', '1973-06-01', 'Marvel Comics', 'The Green Goblin''s attack on Gwen Stacy.', 64, 's3_url_todo', 'en', 'Comics'),
+    ('9780785134503', 'Amazing Spider-Man: Kraven''s Last Hunt', '{"J. M. DeMatteis", "Mike Zeck"}', '1987-10-01', 'Marvel Comics', 'Kraven''s ultimate confrontation with Spider-Man.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9780785107866', 'Ultimate Spider-Man Vol. 1: Power & Responsibility', '{"Brian Michael Bendis", "Mark Bagley"}', '2000-12-01', 'Marvel Comics', 'A modern take on Spider-Man''s origins.', 184, 's3_url_todo', 'en', 'Comics'),
+    ('9780785110620', 'Spider-Man: Blue', '{"Jeph Loeb", "Tim Sale"}', '2002-07-01', 'Marvel Comics', 'Peter Parker reflects on his lost love, Gwen Stacy.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9780785132158', 'The Amazing Spider-Man: Brand New Day', '{"Dan Slott", "Steve McNiven"}', '2008-01-01', 'Marvel Comics', 'The aftermath of "One More Day".', 304, 's3_url_todo', 'en', 'Comics'),
+    ('9780785125044', 'The Amazing Spider-Man: Death of the Stacys', '{"Stan Lee", "Gil Kane"}', '1968-08-01', 'Marvel Comics', 'The storyline leading up to Gwen Stacy''s death.', 72, 's3_url_todo', 'en', 'Comics'),
+    ('0785100385', 'The Amazing Spider-Man: Maximum Carnage', '{"Various"}', '1993-05-01', 'Marvel Comics', 'Spider-Man teams up with Venom to stop Carnage.', 480, 's3_url_todo', 'en', 'Comics'),
+    ('9781302946531', 'Spider-Man: The Wedding Album', '{"Jim Shooter", "David Michelinie"}', '1987-08-01', 'Marvel Comics', 'Peter Parker marries Mary Jane Watson.', 96, 's3_url_todo', 'en', 'Comics'),
+    ('9780785125525', 'Spider-Man: Back in Black', '{"J. Michael Straczynski", "Ron Garney"}', '2007-03-01', 'Marvel Comics', 'Spider-Man dons the black suit once more.', 240, 's3_url_todo', 'en', 'Comics'),
+    ('9780785187981', 'The Amazing Spider-Man: Spider-Verse', '{"Dan Slott", "Olivier Coipel"}', '2015-04-01', 'Marvel Comics', 'All the Spider-Men from across the multiverse unite.', 368, 's3_url_todo', 'en', 'Comics'),
+    ('9780785198864', 'Spider-Man: Renew Your Vows', '{"Dan Slott", "Adam Kubert"}', '2016-06-01', 'Marvel Comics', 'Peter and Mary Jane are married in a world where Spider-Man''s identity is public.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9780785199427', 'The Amazing Spider-Man: Worldwide Vol. 1', '{"Dan Slott", "Giuseppe Camuncoli"}', '2016-01-01', 'Marvel Comics', 'Peter Parker becomes a global entrepreneur as Spider-Man.', 136, 's3_url_todo', 'en', 'Comics'),
+    ('9781302903268', 'The Amazing Spider-Man: The Clone Conspiracy', '{"Dan Slott", "Jim Cheung"}', '2017-01-01', 'Marvel Comics', 'The return of a long-lost character with a shocking plan.', 168, 's3_url_todo', 'en', 'Comics'),
+    ('9781302908911', 'The Amazing Spider-Man: Worldwide Vol. 3', '{"Dan Slott", "Stuart Immonen"}', '2017-05-01', 'Marvel Comics', 'Spider-Man continues his global adventures.', 136, 's3_url_todo', 'en', 'Comics'),
+    ('9780785193166', 'The Amazing Spider-Man Vol. 5: Spiral', '{"Dan Slott", "Stuart Immonen"}', '2018-05-01', 'Marvel Comics', 'Spider-Man faces new challenges.', 136, 's3_url_todo', 'en', 'Comics'),
+    ('9781302917333', 'Spider-Man Life Story', '{"Chip Zdarsky", "Mark Bagley"}', '2019-05-01', 'Marvel Comics', 'A retelling of Spider-Man''s life in real-time.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9781846539411', 'The Amazing Spider-Man Vol. 1: Back to Basics', '{"Nick Spencer", "Ryan Ottley"}', '2018-11-01', 'Marvel Comics', 'Peter Parker returns to his classic status quo.', 136, 's3_url_todo', 'en', 'Comics'),
+    ('9781302912321', 'The Amazing Spider-Man Vol. 2: Friends and Foes', '{"Nick Spencer", "Humberto Ramos"}', '2019-03-01', 'Marvel Comics', 'New challenges for Spider-Man.', 136, 's3_url_todo', 'en', 'Comics'),
+    ('9781302914332', 'The Amazing Spider-Man Vol. 3: Lifetime Achievement', '{"Nick Spencer", "Ryan Ottley"}', '2019-07-01', 'Marvel Comics', 'Spider-Man receives a special award.', 136, 's3_url_todo', 'en', 'Comics'),
+    ('9781302926076', 'Amazing Spider-Man by Nick Spencer Vol. 14', '{"Nick Spencer", "Marcelo Ferreira"}', '2021-01-01', 'Marvel Comics', 'The Chameleon''s latest scheme.', 136, 's3_url_todo', 'en', 'Comics'),
+    ('9780785124986', 'Spider-Man: Birth of Venom', '{"David Michelinie", "Todd McFarlane"}', '1993-03-01', 'Marvel Comics', 'The origin of Venom.', 240, 's3_url_todo', 'en', 'Comics'),
+    ('9781302900595', 'Spider-Man: Carnage Classic', '{"David Michelinie", "Mark Bagley"}', '1991-05-01', 'Marvel Comics', 'The debut of Carnage.', 168, 's3_url_todo', 'en', 'Comics'),
+    ('9780785100478', 'Spider-Man: Revenge of the Sinister Six', '{"Erik Larsen"}', '1991-01-01', 'Marvel Comics', 'The Sinister Six reunite.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('0871359634', 'Spider-Man: The Cosmic Adventures of Spider-Man', '{"Various"}', '1992-01-01', 'Marvel Comics', 'Spider-Man in space!', 288, 's3_url_todo', 'en', 'Comics'),
+    ('9781302916213', 'Spider-Man 2099 vs. Venom 2099', '{"Peter David", "Jonathan Peterson" , "Mark Waid", "Len Wein"}', '1993-01-01', 'Marvel Comics', 'Spider-Man in the year 2099.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9780785102021', 'Spider-Man: The Lost Years', '{"J. M. DeMatteis", "John Romita Jr."}', '1995-01-01', 'Marvel Comics', 'A story set between the Ben Reilly saga.', 128, 's3_url_todo', 'en', 'Comics'),
+    ('9780785108030', 'Spider-Man: Tangled Web Vol. 1', '{"Greg Rucka"}', '2001-06-01', 'Marvel Comics', 'Spider-Man stories told from the perspectives of other characters.', 224, 's3_url_todo', 'en', 'Comics'),
+    ('9780785126652', 'Spider-Man: Reign', '{"Kaare Andrews"}', '2006-12-01', 'Marvel Comics', 'An older Peter Parker returns as Spider-Man in a dystopian future.', 128, 's3_url_todo', 'en', 'Comics'),
+    ('9780785162179', 'Spider-Man: Big Time', '{"Dan Slott", "Humberto Ramos"}', '2011-03-01', 'Marvel Comics', 'Peter Parker gets a new job at Horizon Labs.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9780785160069', 'Spider-Man: Ends of the Earth', '{"Dan Slott", "Stefano Caselli"}', '2012-05-01', 'Marvel Comics', 'Doctor Octopus''s final plan.', 168, 's3_url_todo', 'en', 'Comics'),
+    ('9781302909505', 'Superior Spider-Man: The Complete Collection Vol. 1', '{"Dan Slott", "Ryan Stegman"}', '2013-04-01', 'Marvel Comics', 'Doctor Octopus takes over Peter Parker''s body.', 152, 's3_url_todo', 'en', 'Comics'),
+    ('9780785190806', 'Spider-Man 2099 Vol. 2: Spider-Verse', '{"Peter David", "Will Sliney"}', '2015-04-01', 'Marvel Comics', 'Spider-Man 2099''s involvement in the Spider-Verse event.', 120, 's3_url_todo', 'en', 'Comics'),
+    ('9780785199595', 'Spider-Gwen Vol. 1: Greater Power', '{"Jason Latour", "Robbi Rodriguez"}', '2015-06-01', 'Marvel Comics', 'The debut of Spider-Gwen.', 120, 's3_url_todo', 'en', 'Comics'),
+    ('9781804911952', 'The Amazing Spider-Man Vol. 6: Gang War', '{"Zeb Wells", "John Romita Jr."}', '2024-02-01', 'Marvel Comics', 'Gang wars erupt across New York and Spider-Man is caught in the middle.', 136, 's3_url_todo', 'en', 'Comics'),
+    ('9780596555139', 'Linux System Programming, 2nd Edition', '{"Robert Love"}', '2023-06-20', 'O''Reilly Media', 'A deep dive into Linux system calls, memory management, and kernel interaction.', 456, 's3_url_todo', 'en', 'Technical Manual'),
+    ('9781492043782', 'Istio: Up and Running', '{"Lee Calcote", "Zack Butcher"}', '2023-10-12', 'O''Reilly Media', 'Manage microservices traffic, security, and observability with Istio on Kubernetes and OpenShift.', 260, 's3_url_todo', 'en', 'Technical Manual'),
+    ('9783897211292', 'Learning Python', '{"Mark Lutz", "David Ascher"}', '2009-01-09', 'O''Reilly Media', 'Describes the features of the Python 2.5 programming language, covering such topics as types and operations, statements and syntax, functions, modules, classes and OOP, and exceptions and tools.', 1162, 's3_url_todo', 'en', 'Technical Manual'),
+    ('9781565920606', 'Learning the Unix Operating System: A Concise Guide for the New User', '{"Jerry Peek", "Grace Todino", "John Strang"}', '1993-01-01', 'O''Reilly Media', 'A concise guide for new Unix users, focusing on the bash shell, internet usage (ftp, mail, web), and security basics.', 174, 's3_url_todo', 'en', 'Technical Manual'),
+    ('9780596529680', 'Building Embedded Linux Systems', '{"Karim Yaghmour", "Jon Masters", "Gilad Ben-Yossef", "Philippe Gerum"}', '2008-01-01', 'O''Reilly Media', 'Building Embedded Linux Systems is the first in-depth, hard-core guide to putting together an embedded system based on the Linux kernel.', 439, 's3_url_todo', 'en', 'Technical Manual'),
+    ('0596006489', 'Learning GNU Emacs', '{"Debra Cameron", "James Elliott", "Marc Loy", "Eric S. Raymond", "Bill Rosenblatt"}', '2005-01-18', 'O''Reilly Media', 'A thorough guide to the GNU Emacs editor, taking users from basic text editing to moderately complicated customization and programming.', 509, 's3_url_todo', 'en', 'Technical Manual'),
+    ('9781098103989', 'Python For Data Analysis', '{"Wes McKinney"}', '2022-09-20', 'O''Reilly Media', 'The definitive handbook for manipulating, processing, cleaning, and crunching datasets in Python, updated for Python 3.10 and pandas 1.4, packed with practical case studies.', 582, 's3_url_todo', 'en', 'Technical Manual');
+    ) AS v(isbn, title, authors, publication_date, publisher, description, page_count, cover_image_id, original_language, genre)
+    WHERE NOT EXISTS (SELECT 1 FROM books LIMIT 1);
+
+    -- ============================================================
+    -- users_db: schema only (users are created via Keycloak registration)
+    -- ============================================================
+    \c users_db
+
+    CREATE TABLE IF NOT EXISTS users (
+        keycloak_user_id UUID PRIMARY KEY,
+        first_name VARCHAR(50) NOT NULL,
+        last_name VARCHAR(50) NOT NULL,
+        username VARCHAR(80) NOT NULL UNIQUE,
+        email VARCHAR(100) NOT NULL UNIQUE,
+        theme_preference VARCHAR,
+        genre_preference TEXT[]
+    );
+
+    -- ============================================================
+    -- readinglist_db: schema only
+    -- ============================================================
+    \c readinglist_db
+
+    CREATE TABLE IF NOT EXISTS reading_lists (
+        id UUID PRIMARY KEY,
+        user_id UUID NOT NULL,
+        name VARCHAR(30) NOT NULL,
+        description VARCHAR(200),
+        creation_date TIMESTAMP WITHOUT TIME ZONE NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS reading_list_items (
+        reading_list_id UUID NOT NULL,
+        book_id UUID NOT NULL,
+        CONSTRAINT fk_reading_list
+            FOREIGN KEY(reading_list_id) REFERENCES reading_lists(id)
+            ON DELETE CASCADE,
+        PRIMARY KEY (reading_list_id, book_id)
+    );
+
+    -- ============================================================
+    -- review_db: schema only
+    -- ============================================================
+    \c review_db
+
+    CREATE TABLE IF NOT EXISTS reviews (
+        review_id UUID PRIMARY KEY,
+        book_id UUID NOT NULL,
+        user_id UUID NOT NULL,
+        rating INT NOT NULL,
+        review_text VARCHAR(200),
+        publication_date TIMESTAMP WITHOUT TIME ZONE NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_reviews_book_id ON reviews(book_id);
+    CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id);

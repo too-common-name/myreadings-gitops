@@ -9,6 +9,10 @@ metadata:
 spec:
   postgresVersion: 16
 
+  databaseInitSQL:
+    name: myreadings-db-init
+    key: init.sql
+
   instances:
     - name: instance1
       replicas: 1
