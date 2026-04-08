@@ -203,6 +203,8 @@ spec:
 
             if grep -q "name: ${BASE_REF}" kustomization.yaml; then
               sed -i "/name: ${BASE_REF}/{n;s|newName: .*|newName: ${INTERNAL_IMAGE}|;n;s|newTag: .*|newTag: ${COMMIT_SHA}|}" kustomization.yaml
+            elif grep -q "^images:" kustomization.yaml; then
+              sed -i "/^images:/a\\- name: ${BASE_REF}\n  newName: ${INTERNAL_IMAGE}\n  newTag: ${COMMIT_SHA}" kustomization.yaml
             else
               printf "\nimages:\n- name: %s\n  newName: %s\n  newTag: %s\n" "${BASE_REF}" "${INTERNAL_IMAGE}" "${COMMIT_SHA}" >> kustomization.yaml
             fi
