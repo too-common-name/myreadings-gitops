@@ -34,7 +34,7 @@ MyReadings is a Quarkus-based modular monolith being incrementally decomposed in
 │   │   ├── configure-keycloak.yaml  #   Job: realm, client, roles
 │   │   └── configure-rabbitmq.yaml  #   Job: vhost, user, queue, binding
 │   ├── keycloak/
-│   │   ├── keycloak.yaml              #   Keycloak CR (RHBK operator)
+│   │   ├── keycloak.yaml              #   Keycloak CR (RHBK operator, Ingress disabled)
 │   │   └── route.yaml                 #   Explicit Route (operator Ingress lacks host)
 │   ├── monolith/
 │   │   ├── configmap.yaml, deployment.yaml, service.yaml
@@ -186,19 +186,18 @@ Until then, Testcontainers-based tests should be run locally or in an environmen
 
 The `overlays/dev/` directory contains values that depend on the target cluster. When deploying to a new cluster, update these:
 
-### Keycloak hostname
+### OIDC token issuer
 
-The Keycloak OIDC issuer must match the external Route URL so that tokens issued via the browser are accepted by the backend. The hostname follows the OCP pattern `{route-name}-{namespace}.apps.{cluster-domain}`.
+The Quarkus backend validates the `iss` claim in JWT tokens. The application's `application.properties` ships a local-dev default (`http://localhost:8080/...`) which is wrong on OCP. The overlay patches the monolith ConfigMap with the correct external Keycloak URL.
 
-Update `overlays/dev/patches/keycloak-hostname.yaml`:
+Update `overlays/dev/patches/monolith-oidc-issuer.yaml`:
 
 ```yaml
-spec:
-  hostname:
-    hostname: myreadings-keycloak-myreadings-dev.apps.<your-cluster-domain>
+data:
+  QUARKUS_OIDC_TOKEN_ISSUER: "https://myreadings-keycloak-myreadings-dev.apps.<your-cluster-domain>/realms/my-readings"
 ```
 
-This is the only value that needs changing per cluster. The UI server derives all other URLs dynamically at runtime from the incoming request's `Host` header.
+The URL follows the OCP Route pattern `https://{route-name}-{namespace}.apps.{cluster-domain}/realms/{realm}`. This is the only value that needs changing per cluster. The UI server derives all other URLs dynamically at runtime from the incoming request's `Host` header.
 
 ### UI architecture (Node server, no nginx)
 
@@ -255,5 +254,5 @@ The Tekton pipeline pushes images to the internal registry with commit SHA tags.
 - **Testcontainers in CI**: JPA and controller integration tests are excluded from the pipeline due to the `pipelines-scc` restriction. The `maven-test-dind` task is ready for when the cluster allows privileged containers.
 - **Checkstyle violations**: The project has pre-existing checkstyle violations. The lint step currently reports but does not fail the build. Flip `failOnViolation` to `true` once violations are cleaned up.
 - **Dockerfiles use fully qualified image names**: Required by buildah on OpenShift, which enforces short-name resolution and cannot prompt for a registry without a TTY (e.g. `docker.io/library/maven:3.9-eclipse-temurin-21`).
-- **Keycloak hostname is per-cluster**: The OIDC issuer must match the external Route URL. When moving to a new cluster, update `overlays/dev/patches/keycloak-hostname.yaml` with the new apps domain.
-- **RHBK operator Ingress has no host**: The RHBK operator creates a Kubernetes Ingress without a `host` field, so OpenShift doesn't auto-generate a usable Route. An explicit Route is included in `base/keycloak/route.yaml`.
+- **OIDC issuer is per-cluster**: The `QUARKUS_OIDC_TOKEN_ISSUER` env var must match the external Keycloak Route URL. When moving to a new cluster, update `overlays/dev/patches/monolith-oidc-issuer.yaml` with the new apps domain.
+- **RHBK operator Ingress has no host**: The RHBK operator creates a Kubernetes Ingress without a `host` field, so OpenShift doesn't auto-generate a usable Route. An explicit Route is included in `base/keycloak/route.yaml`. The operator's Ingress is disabled via `spec.ingress.enabled: false` in the Keycloak CR.
