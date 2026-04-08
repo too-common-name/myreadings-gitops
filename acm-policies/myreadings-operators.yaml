@@ -121,3 +121,29 @@ spec:
             name: rabbitmq-cluster-operator
             source: community-operators
             sourceNamespace: openshift-marketplace
+    # ================================================================
+    # Tekton pruner — auto-cleanup of completed PipelineRuns/TaskRuns
+    # ================================================================
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: tekton-pruner-policy
+        spec:
+          severity: low
+          remediationAction: enforce
+          object-templates:
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: operator.tekton.dev/v1alpha1
+                kind: TektonConfig
+                metadata:
+                  name: config
+                spec:
+                  pruner:
+                    disabled: false
+                    keep: 3
+                    schedule: "0 * * * *"
+                    resources:
+                      - pipelinerun
+                      - taskrun
