@@ -52,9 +52,12 @@ MyReadings is a Quarkus-based modular monolith being incrementally decomposed in
 └── tekton/                         # CI pipeline, tasks, RBAC
     ├── kustomization.yaml
     ├── rbac.yaml                   # ServiceAccount + image-builder RoleBinding
-    ├── task-maven-test.yaml        # Maven test task (unit + integration)
-    ├── task-acs-image-scan.yaml    # ACS image scan (graceful if not configured)
-    └── pipeline.yaml               # Reusable parameterized pipeline
+    ├── task-maven-test.yaml        # Maven test/lint (no Docker needed)
+    ├── task-maven-test-dind.yaml   # Maven test with DinD sidecar (Testcontainers)
+    ├── task-acs-image-scan.yaml    # ACS image scan (graceful skip if not configured)
+    ├── pipeline.yaml               # Reusable parameterized pipeline
+    └── pipelineruns/
+        └── run-app.yaml            # Example PipelineRun for the monolith
 ```
 
 ## Prerequisites
@@ -79,17 +82,15 @@ oc adm policy add-cluster-role-to-user cluster-admin \
 
 ### Secrets (created manually, not in Git)
 
-**GitHub token** — needed by the Tekton pipeline to push image tag updates to this gitops repo. Create a fine-grained PAT with `Contents: Read and Write` on `myreadings-gitops` only:
+**GitHub token** — needed by the Tekton pipeline to push image tag updates to this gitops repo. Create a fine-grained PAT with `Contents: Read and Write` on `myreadings-gitops` only.
+
+The `git-cli` ClusterTask expects `.git-credentials` and `.gitconfig` keys:
 
 ```bash
 oc create secret generic github-token \
-  --from-literal=username=<github-username> \
-  --from-literal=password=<fine-grained-PAT> \
-  --type=kubernetes.io/basic-auth \
-  -n myreadings-dev
-
-oc annotate secret github-token \
-  "tekton.dev/git-0=https://github.com" \
+  --from-literal=".git-credentials=https://<github-username>:<fine-grained-PAT>@github.com" \
+  --from-literal=".gitconfig=[credential \"https://github.com\"]
+  helper = store" \
   -n myreadings-dev
 ```
 
@@ -147,17 +148,35 @@ Keycloak and RabbitMQ configuration runs as Kubernetes Jobs using the custom Ans
 
 ### CI (Tekton)
 
-A single reusable Pipeline (`myreadings-build`) handles all components:
+A single reusable Pipeline (`myreadings-build`) handles all components. The pipeline has seven stages:
 
 ```
-clone -> unit tests -> build+push -> integration tests  \
-                                  -> image scan (ACS)    -> update gitops
+clone ─┬─ lint (checkstyle)  ─┬─ build+push ─┬─ integration tests ─┬─ update gitops
+       └─ unit tests ─────────┘              └─ image scan (ACS)   ─┘
 ```
 
-- **Unit tests** fail fast before any image is built
-- **Integration tests** and **image scan** run in parallel after the build, both gating promotion
-- **Update gitops** patches the Kustomize overlay with the new image SHA, triggering Argo CD deployment
-- Images are tagged with the commit SHA (no `:latest`)
+- **Lint** runs `checkstyle:check` against the project's `checkstyle.xml` (Sun conventions). Currently non-blocking (`failOnViolation=false`) due to pre-existing violations; switch to `true` to enforce
+- **Unit tests** run in parallel with lint for fast feedback. Pure Mockito/JUnit tests only — no Docker required
+- **Build** uses `buildah` with the app's multi-stage Dockerfile, pushes to the OpenShift internal registry tagged with the commit SHA
+- **Integration tests** and **image scan** run in parallel after the build, both gating the promotion step
+- **Update gitops** clones this repo, appends the new image reference to the Kustomize overlay's `images` section, commits and pushes — which triggers Argo CD to deploy
+
+Images are always tagged with the full commit SHA (no `:latest`).
+
+#### Testcontainers / DinD limitation
+
+Tests that use `@QuarkusTest` with Testcontainers (JPA repository tests, controller integration tests) are excluded from the pipeline because they need a Docker daemon. A `maven-test-dind` task with a Docker-in-Docker sidecar is included and ready, but OpenShift Pipelines globally enforces `pipelines-scc` via `TektonConfig`, which blocks privileged containers. To enable DinD tests, change the SCC in TektonConfig:
+
+```yaml
+# oc edit tektonconfig config
+spec:
+  platforms:
+    openshift:
+      scc:
+        default: privileged   # was: pipelines-scc
+```
+
+Until then, Testcontainers-based tests should be run locally or in an environment with Docker available.
 
 ## Getting started
 
@@ -185,6 +204,8 @@ Trigger a Tekton PipelineRun for each component. Example for the monolith:
 oc create -f tekton/pipelineruns/run-app.yaml -n myreadings-dev
 ```
 
+The pipeline will build, test, scan, and push the image, then automatically update the Kustomize overlay to trigger an Argo CD deployment.
+
 ## Container images
 
 | Component | Base image ref | Built by |
@@ -195,3 +216,9 @@ oc create -f tekton/pipelineruns/run-app.yaml -n myreadings-dev
 | Ansible EE | `quay.io/rh-ee-drossi/myreadings-ee:latest` | Manual build |
 
 The Tekton pipeline pushes images to the internal registry with commit SHA tags. The Kustomize overlay maps the base image refs to the internal registry images.
+
+## Known limitations and tech debt
+
+- **Testcontainers in CI**: JPA and controller integration tests are excluded from the pipeline due to the `pipelines-scc` restriction. The `maven-test-dind` task is ready for when the cluster allows privileged containers.
+- **Checkstyle violations**: The project has pre-existing checkstyle violations. The lint step currently reports but does not fail the build. Flip `failOnViolation` to `true` once violations are cleaned up.
+- **Dockerfiles use fully qualified image names**: Required by buildah on OpenShift, which enforces short-name resolution and cannot prompt for a registry without a TTY (e.g. `docker.io/library/maven:3.9-eclipse-temurin-21`).

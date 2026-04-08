@@ -64,9 +64,30 @@ spec:
         - name: output
           workspace: source
 
-    # 2. Unit tests -- fast developer feedback, gates the build
-    #    JPA tests are excluded because they need Testcontainers (Docker daemon)
-    #    which is not available inside Tekton pods without DinD.
+    # 2a. Checkstyle lint -- runs in parallel with unit-tests
+    - name: lint
+      runAfter:
+        - clone-source
+      when:
+        - input: $(params.test-enabled)
+          operator: in
+          values: ["true"]
+      taskRef:
+        name: maven-test
+      params:
+        - name: GOALS
+          value:
+            - checkstyle:check
+            - -Dcheckstyle.failOnViolation=false
+            - -Dquarkus.devservices.enabled=false
+        - name: CONTEXT_DIR
+          value: $(params.context-dir)
+      workspaces:
+        - name: source
+          workspace: source
+
+    # 2b. Unit tests -- fast feedback, no Docker needed
+    #     Excludes @QuarkusTest tests that need Testcontainers.
     - name: unit-tests
       runAfter:
         - clone-source
@@ -91,6 +112,7 @@ spec:
     # 3. Build image and push to internal registry
     - name: build-and-push
       runAfter:
+        - lint
         - unit-tests
       taskRef:
         resolver: cluster
@@ -114,10 +136,11 @@ spec:
         - name: source
           workspace: source
 
-    # 4a. Integration tests -- runs in parallel with image-scan, gates promotion
-    # TODO: JPA/DB tests are excluded (same Testcontainers/DinD limitation).
-    # To run the full suite, either add a DinD sidecar or run them in a
-    # privileged environment. Currently this runs non-DB verify goals only.
+    # 4a. Integration tests -- gates promotion
+    # Testcontainers tests (Jpa*, *IntegrationTest) are excluded because
+    # OpenShift Pipelines enforces pipelines-scc which disallows privileged
+    # containers needed for DinD. The maven-test-dind task is ready for
+    # clusters that allow it (set scc.default: privileged in TektonConfig).
     - name: integration-tests
       runAfter:
         - build-and-push
@@ -131,7 +154,6 @@ spec:
         - name: GOALS
           value:
             - verify
-            - -DskipUnitTests=true
             - -Dquarkus.devservices.enabled=false
             - -Dsurefire.excludes=**/Jpa*Test.java,**/*IntegrationTest.java
         - name: CONTEXT_DIR
@@ -173,13 +195,19 @@ spec:
           value: |
             COMMIT_SHA="$(tasks.clone-source.results.COMMIT)"
             INTERNAL_IMAGE="image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.image-name)"
+            BASE_REF="$(params.image-base-ref)"
 
             cd /tmp
             git clone $(params.gitops-repo-url) gitops
             cd gitops/$(params.overlay-path)
 
-            kustomize edit set image "$(params.image-base-ref)=${INTERNAL_IMAGE}:${COMMIT_SHA}"
+            if grep -q "name: ${BASE_REF}" kustomization.yaml; then
+              sed -i "/name: ${BASE_REF}/{n;s|newName: .*|newName: ${INTERNAL_IMAGE}|;n;s|newTag: .*|newTag: ${COMMIT_SHA}|}" kustomization.yaml
+            else
+              printf "\nimages:\n- name: %s\n  newName: %s\n  newTag: %s\n" "${BASE_REF}" "${INTERNAL_IMAGE}" "${COMMIT_SHA}" >> kustomization.yaml
+            fi
 
+            cat kustomization.yaml
             git add .
             git commit -m "ci: update $(params.image-name) to ${COMMIT_SHA:0:7}"
             git push origin main

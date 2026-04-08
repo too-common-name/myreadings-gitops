@@ -22,7 +22,7 @@ spec:
       default: "true"
   steps:
     - name: image-check
-      image: registry.redhat.io/advanced-cluster-security/rhacs-roxctl-rhel8:latest
+      image: registry.redhat.io/advanced-cluster-security/rhacs-roxctl-rhel8:4.7
       env:
         - name: ROX_API_TOKEN
           valueFrom:

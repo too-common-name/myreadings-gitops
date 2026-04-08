@@ -4,5 +4,6 @@ kind: Kustomization
 resources:
   - rbac.yaml
   - task-maven-test.yaml
+  - task-maven-test-dind.yaml
   - task-acs-image-scan.yaml
   - pipeline.yaml

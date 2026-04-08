@@ -1,0 +1,72 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: maven-test-dind
+  labels:
+    app.kubernetes.io/part-of: myreadings
+  annotations:
+    description: |
+      Runs Maven goals with a Docker-in-Docker sidecar so that
+      Quarkus Dev Services / Testcontainers can start database
+      containers during tests.
+      Requires: oc adm policy add-scc-to-user privileged -z myreadings-pipeline
+spec:
+  params:
+    - name: GOALS
+      type: array
+      default:
+        - verify
+    - name: CONTEXT_DIR
+      type: string
+      default: "."
+  workspaces:
+    - name: source
+  steps:
+    - name: wait-for-docker
+      image: docker.io/library/docker:cli
+      script: |
+        #!/bin/sh
+        echo "Waiting for Docker daemon..."
+        for i in $(seq 1 30); do
+          if docker info >/dev/null 2>&1; then
+            echo "Docker is ready."
+            exit 0
+          fi
+          sleep 2
+        done
+        echo "ERROR: Docker daemon did not start in time."
+        exit 1
+      volumeMounts:
+        - name: dind-socket
+          mountPath: /var/run/
+    - name: maven-test
+      image: docker.io/library/maven:3.9-eclipse-temurin-21
+      workingDir: $(workspaces.source.path)/$(params.CONTEXT_DIR)
+      env:
+        - name: TESTCONTAINERS_RYUK_DISABLED
+          value: "true"
+      args: ["$(params.GOALS[*])"]
+      command:
+        - mvn
+      volumeMounts:
+        - name: m2-cache
+          mountPath: /root/.m2
+        - name: dind-socket
+          mountPath: /var/run/
+  sidecars:
+    - name: docker
+      image: docker.io/library/docker:dind
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - name: dind-storage
+          mountPath: /var/lib/docker
+        - name: dind-socket
+          mountPath: /var/run/
+  volumes:
+    - name: m2-cache
+      emptyDir: {}
+    - name: dind-storage
+      emptyDir: {}
+    - name: dind-socket
+      emptyDir: {}
