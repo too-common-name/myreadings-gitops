@@ -79,14 +79,12 @@ spec:
                   name: myreadings-rabbitmq-default-user
                   key: password
           readinessProbe:
-            httpGet:
-              path: /q/health/ready
+            tcpSocket:
               port: 8081
             initialDelaySeconds: 20
             periodSeconds: 10
           livenessProbe:
-            httpGet:
-              path: /q/health/live
+            tcpSocket:
               port: 8081
             initialDelaySeconds: 30
             periodSeconds: 15
