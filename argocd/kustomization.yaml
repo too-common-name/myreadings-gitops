@@ -13,3 +13,4 @@ resources:
   # sync-wave: 0 (applications and appsets)
   - acm-policies-app.yaml
   - myreadings-appset.yaml
+  - myreadings-tekton-app.yaml

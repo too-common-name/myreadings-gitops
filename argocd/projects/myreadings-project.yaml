@@ -40,6 +40,16 @@ spec:
       kind: Role
     - group: rbac.authorization.k8s.io
       kind: RoleBinding
+    - group: tekton.dev
+      kind: Task
+    - group: tekton.dev
+      kind: Pipeline
+    - group: triggers.tekton.dev
+      kind: EventListener
+    - group: triggers.tekton.dev
+      kind: TriggerBinding
+    - group: triggers.tekton.dev
+      kind: TriggerTemplate
 
   roles:
     - name: myreadings-deployer

@@ -1,0 +1,32 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: maven-test
+  labels:
+    app.kubernetes.io/part-of: myreadings
+spec:
+  params:
+    - name: GOALS
+      type: array
+      default:
+        - test
+    - name: CONTEXT_DIR
+      type: string
+      default: "."
+  workspaces:
+    - name: source
+    - name: maven-cache
+      optional: true
+  steps:
+    - name: maven-test
+      image: maven:3.9-eclipse-temurin-21
+      workingDir: $(workspaces.source.path)/$(params.CONTEXT_DIR)
+      args: ["$(params.GOALS[*])"]
+      command:
+        - mvn
+      volumeMounts:
+        - name: m2-cache
+          mountPath: /root/.m2
+  volumes:
+    - name: m2-cache
+      emptyDir: {}

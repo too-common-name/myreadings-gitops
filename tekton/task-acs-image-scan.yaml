@@ -1,0 +1,51 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: acs-image-scan
+  labels:
+    app.kubernetes.io/part-of: myreadings
+  annotations:
+    description: |
+      Scans a container image using ACS (StackRox) roxctl.
+      Requires the acs-api-token secret with an ACS API token
+      and ROX_CENTRAL_ENDPOINT env var.
+spec:
+  params:
+    - name: IMAGE
+      type: string
+      description: Full image reference to scan
+    - name: ROX_CENTRAL_ENDPOINT
+      type: string
+      default: central-stackrox.apps.cluster.example.com:443
+    - name: INSECURE_SKIP_TLS_VERIFY
+      type: string
+      default: "true"
+  steps:
+    - name: image-check
+      image: registry.redhat.io/advanced-cluster-security/rhacs-roxctl-rhel8:latest
+      env:
+        - name: ROX_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: acs-api-token
+              key: token
+              optional: true
+        - name: ROX_CENTRAL_ENDPOINT
+          value: $(params.ROX_CENTRAL_ENDPOINT)
+      script: |
+        #!/usr/bin/env bash
+        set -e
+
+        if [ -z "${ROX_API_TOKEN}" ]; then
+          echo "WARNING: ACS not configured (acs-api-token secret missing). Skipping scan."
+          exit 0
+        fi
+
+        echo "Scanning image: $(params.IMAGE)"
+
+        roxctl --insecure-skip-tls-verify=$(params.INSECURE_SKIP_TLS_VERIFY) \
+          image check \
+          --image "$(params.IMAGE)" \
+          --output table
+
+        echo "Image scan passed."

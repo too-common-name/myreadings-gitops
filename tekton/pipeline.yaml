@@ -1,0 +1,184 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: myreadings-build
+  labels:
+    app.kubernetes.io/part-of: myreadings
+spec:
+  params:
+    - name: git-url
+      type: string
+      description: Source code repository URL
+    - name: git-revision
+      type: string
+      default: main
+    - name: dockerfile-path
+      type: string
+      default: ./Dockerfile
+    - name: context-dir
+      type: string
+      default: "."
+    - name: image-name
+      type: string
+      description: "Target image name (e.g. myreadings-app)"
+    - name: image-base-ref
+      type: string
+      description: "Base image ref in the deployment YAML (e.g. quay.io/too-common-name/myreadings-app)"
+    - name: gitops-repo-url
+      type: string
+      default: https://github.com/too-common-name/myreadings-gitops.git
+    - name: overlay-path
+      type: string
+      default: overlays/dev
+    - name: test-enabled
+      type: string
+      default: "true"
+      description: "Set to 'false' to skip tests (e.g. for UI builds)"
+
+  workspaces:
+    - name: source
+      description: Shared workspace for source code
+    - name: git-credentials
+      description: Secret with GitHub credentials for gitops repo push
+
+  tasks:
+    # 1. Clone source
+    - name: clone-source
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: git-clone
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: URL
+          value: $(params.git-url)
+        - name: REVISION
+          value: $(params.git-revision)
+        - name: DEPTH
+          value: "0"
+      workspaces:
+        - name: output
+          workspace: source
+
+    # 2. Unit tests -- fast developer feedback, gates the build
+    - name: unit-tests
+      runAfter:
+        - clone-source
+      when:
+        - input: $(params.test-enabled)
+          operator: in
+          values: ["true"]
+      taskRef:
+        name: maven-test
+      params:
+        - name: GOALS
+          value:
+            - test
+        - name: CONTEXT_DIR
+          value: $(params.context-dir)
+      workspaces:
+        - name: source
+          workspace: source
+
+    # 3. Build image and push to internal registry
+    - name: build-and-push
+      runAfter:
+        - unit-tests
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: IMAGE
+          value: "image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.image-name):$(tasks.clone-source.results.COMMIT)"
+        - name: DOCKERFILE
+          value: $(params.dockerfile-path)
+        - name: CONTEXT
+          value: $(params.context-dir)
+        - name: TLS_VERIFY
+          value: "false"
+      workspaces:
+        - name: source
+          workspace: source
+
+    # 4a. Integration tests -- runs in parallel with image-scan, gates promotion
+    # TODO: currently runs mvn verify against source code, not the built image.
+    # Evolve to run the container image as a sidecar and test against it
+    # to truly "test what you ship".
+    - name: integration-tests
+      runAfter:
+        - build-and-push
+      when:
+        - input: $(params.test-enabled)
+          operator: in
+          values: ["true"]
+      taskRef:
+        name: maven-test
+      params:
+        - name: GOALS
+          value:
+            - verify
+            - -DskipUnitTests=true
+        - name: CONTEXT_DIR
+          value: $(params.context-dir)
+      workspaces:
+        - name: source
+          workspace: source
+
+    # 4b. Image security scan (ACS) -- runs in parallel with integration-tests
+    - name: image-scan
+      runAfter:
+        - build-and-push
+      taskRef:
+        name: acs-image-scan
+      params:
+        - name: IMAGE
+          value: "image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.image-name):$(tasks.clone-source.results.COMMIT)"
+
+    # 5. Update gitops overlay -- only after ALL quality gates pass
+    - name: update-gitops
+      runAfter:
+        - integration-tests
+        - image-scan
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: git-cli
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: GIT_USER_NAME
+          value: tekton-pipeline
+        - name: GIT_USER_EMAIL
+          value: tekton@myreadings.local
+        - name: GIT_SCRIPT
+          value: |
+            COMMIT_SHA="$(tasks.clone-source.results.COMMIT)"
+            INTERNAL_IMAGE="image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.image-name)"
+
+            cd /tmp
+            git clone $(params.gitops-repo-url) gitops
+            cd gitops/$(params.overlay-path)
+
+            kustomize edit set image "$(params.image-base-ref)=${INTERNAL_IMAGE}:${COMMIT_SHA}"
+
+            git add .
+            git commit -m "ci: update $(params.image-name) to ${COMMIT_SHA:0:7}"
+            git push origin main
+      workspaces:
+        - name: source
+          workspace: source
+        - name: basic-auth
+          workspace: git-credentials
