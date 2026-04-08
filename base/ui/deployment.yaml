@@ -31,13 +31,13 @@ spec:
                   fieldPath: metadata.namespace
           readinessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 15
