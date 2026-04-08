@@ -16,3 +16,8 @@ images:
 - name: quay.io/too-common-name/myreadings-app
   newName: image-registry.openshift-image-registry.svc:5000/myreadings-dev/myreadings-app
   newTag: 9c62d8d7e2e9be123bf294b6fa3764f5eedb4d9a
+
+images:
+- name: quay.io/too-common-name/myreadings-ui
+  newName: image-registry.openshift-image-registry.svc:5000/myreadings-dev/myreadings-ui
+  newTag: 0e140cd97b9c2b5e7b25d5f885c9fd5063f6a6e8
