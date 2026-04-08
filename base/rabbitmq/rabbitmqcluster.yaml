@@ -25,11 +25,19 @@ spec:
             containers:
               - name: rabbitmq
                 startupProbe:
+                  exec:
+                    command:
+                      - rabbitmq-diagnostics
+                      - check_running
                   initialDelaySeconds: 30
                   timeoutSeconds: 30
                   periodSeconds: 15
                   failureThreshold: 30
                 readinessProbe:
+                  exec:
+                    command:
+                      - rabbitmq-diagnostics
+                      - check_running
                   timeoutSeconds: 15
   rabbitmq:
     additionalPlugins:

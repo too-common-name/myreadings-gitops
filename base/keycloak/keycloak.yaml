@@ -30,7 +30,32 @@ spec:
     podTemplate:
       spec:
         containers:
-          - resources:
+          - env:
+              - name: KK_TO_RMQ_URL
+                valueFrom:
+                  secretKeyRef:
+                    name: myreadings-rabbitmq-default-user
+                    key: host
+              - name: KK_TO_RMQ_PORT
+                valueFrom:
+                  secretKeyRef:
+                    name: myreadings-rabbitmq-default-user
+                    key: port
+              - name: KK_TO_RMQ_VHOST
+                value: my-readings
+              - name: KK_TO_RMQ_EXCHANGE
+                value: amq.topic
+              - name: KK_TO_RMQ_USERNAME
+                valueFrom:
+                  secretKeyRef:
+                    name: myreadings-rabbitmq-default-user
+                    key: username
+              - name: KK_TO_RMQ_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: myreadings-rabbitmq-default-user
+                    key: password
+            resources:
               requests:
                 cpu: 100m
                 memory: 512Mi
