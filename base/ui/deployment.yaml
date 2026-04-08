@@ -24,9 +24,11 @@ spec:
           ports:
             - containerPort: 8080
               protocol: TCP
-          volumeMounts:
-            - name: nginx-config
-              mountPath: /etc/nginx/conf.d
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           readinessProbe:
             httpGet:
               path: /
@@ -46,7 +48,3 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
-      volumes:
-        - name: nginx-config
-          configMap:
-            name: myreadings-ui-nginx

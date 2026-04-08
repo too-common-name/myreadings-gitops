@@ -15,7 +15,7 @@ spec:
     - name: git-revision
       value: main
     - name: dockerfile-path
-      value: ./Dockerfile
+      value: ./Dockerfile.ocp
     - name: context-dir
       value: "."
     - name: image-name

@@ -10,7 +10,6 @@ resources:
   - monolith/deployment.yaml
   - monolith/service.yaml
   - monolith/route.yaml
-  - ui/configmap-nginx.yaml
   - ui/deployment.yaml
   - ui/service.yaml
   - ui/route.yaml
