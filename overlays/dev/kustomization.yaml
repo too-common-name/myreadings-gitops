@@ -11,6 +11,7 @@ resources:
 patches:
   - path: patches/resource-limits-app.yaml
   - path: patches/resource-limits-ui.yaml
+  - path: patches/keycloak-hostname.yaml
 
 images:
 - name: quay.io/too-common-name/myreadings-app

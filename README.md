@@ -33,10 +33,13 @@ MyReadings is a Quarkus-based modular monolith being incrementally decomposed in
 │   │   ├── rbac.yaml               #   ServiceAccount + Role for reading Secrets
 │   │   ├── configure-keycloak.yaml  #   Job: realm, client, roles
 │   │   └── configure-rabbitmq.yaml  #   Job: vhost, user, queue, binding
+│   ├── keycloak/
+│   │   ├── keycloak.yaml              #   Keycloak CR (RHBK operator)
+│   │   └── route.yaml                 #   Explicit Route (operator Ingress lacks host)
 │   ├── monolith/
-│   │   ├── configmap.yaml, deployment.yaml, service.yaml, route.yaml
+│   │   ├── configmap.yaml, deployment.yaml, service.yaml
 │   └── ui/
-│       ├── configmap-nginx.yaml, deployment.yaml, service.yaml, route.yaml
+│       ├── deployment.yaml, service.yaml, route.yaml
 ├── overlays/
 │   └── dev/
 │       ├── kustomization.yaml      # Namespace, patches, image overrides (updated by CI)
@@ -57,7 +60,8 @@ MyReadings is a Quarkus-based modular monolith being incrementally decomposed in
     ├── task-acs-image-scan.yaml    # ACS image scan (graceful skip if not configured)
     ├── pipeline.yaml               # Reusable parameterized pipeline
     └── pipelineruns/
-        └── run-app.yaml            # Example PipelineRun for the monolith
+        ├── run-app.yaml            # PipelineRun for the monolith
+        └── run-ui.yaml             # PipelineRun for the UI (uses Dockerfile.ocp)
 ```
 
 ## Prerequisites
@@ -178,6 +182,34 @@ spec:
 
 Until then, Testcontainers-based tests should be run locally or in an environment with Docker available.
 
+## Cluster-specific configuration
+
+The `overlays/dev/` directory contains values that depend on the target cluster. When deploying to a new cluster, update these:
+
+### Keycloak hostname
+
+The Keycloak OIDC issuer must match the external Route URL so that tokens issued via the browser are accepted by the backend. The hostname follows the OCP pattern `{route-name}-{namespace}.apps.{cluster-domain}`.
+
+Update `overlays/dev/patches/keycloak-hostname.yaml`:
+
+```yaml
+spec:
+  hostname:
+    hostname: myreadings-keycloak-myreadings-dev.apps.<your-cluster-domain>
+```
+
+This is the only value that needs changing per cluster. The UI server derives all other URLs dynamically at runtime from the incoming request's `Host` header.
+
+### UI architecture (Node server, no nginx)
+
+On OCP the UI runs a Node.js Express server (`Dockerfile.ocp` + `server.js`) instead of nginx:
+
+- **API proxy**: `/api/*` requests are proxied to backend services via internal K8s DNS -- no backend Route needed, no CORS
+- **Dynamic config**: `GET /config.js` is generated at runtime by deriving the Keycloak Route URL from the request's `Host` header and the pod's `NAMESPACE` env var (Kubernetes Downward API)
+- **SPA fallback**: all other requests serve the Vue app's `index.html`
+
+For local development (`docker-compose`), the original `Dockerfile` with nginx is used unchanged.
+
 ## Getting started
 
 ### 1. Label your managed cluster
@@ -198,13 +230,14 @@ See the Secrets section in Prerequisites above.
 
 ### 4. Build container images
 
-Trigger a Tekton PipelineRun for each component. Example for the monolith:
+Trigger a Tekton PipelineRun for each component:
 
 ```bash
 oc create -f tekton/pipelineruns/run-app.yaml -n myreadings-dev
+oc create -f tekton/pipelineruns/run-ui.yaml -n myreadings-dev
 ```
 
-The pipeline will build, test, scan, and push the image, then automatically update the Kustomize overlay to trigger an Argo CD deployment.
+The pipeline will build, test, scan, and push the image, then automatically update the Kustomize overlay to trigger an Argo CD deployment. The UI pipeline uses `Dockerfile.ocp` (Node server) and skips Maven tests.
 
 ## Container images
 
@@ -222,3 +255,5 @@ The Tekton pipeline pushes images to the internal registry with commit SHA tags.
 - **Testcontainers in CI**: JPA and controller integration tests are excluded from the pipeline due to the `pipelines-scc` restriction. The `maven-test-dind` task is ready for when the cluster allows privileged containers.
 - **Checkstyle violations**: The project has pre-existing checkstyle violations. The lint step currently reports but does not fail the build. Flip `failOnViolation` to `true` once violations are cleaned up.
 - **Dockerfiles use fully qualified image names**: Required by buildah on OpenShift, which enforces short-name resolution and cannot prompt for a registry without a TTY (e.g. `docker.io/library/maven:3.9-eclipse-temurin-21`).
+- **Keycloak hostname is per-cluster**: The OIDC issuer must match the external Route URL. When moving to a new cluster, update `overlays/dev/patches/keycloak-hostname.yaml` with the new apps domain.
+- **RHBK operator Ingress has no host**: The RHBK operator creates a Kubernetes Ingress without a `host` field, so OpenShift doesn't auto-generate a usable Route. An explicit Route is included in `base/keycloak/route.yaml`.
