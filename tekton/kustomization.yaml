@@ -6,4 +6,5 @@ resources:
   - task-maven-test.yaml
   - task-maven-test-dind.yaml
   - task-acs-image-scan.yaml
-  - pipeline.yaml
+  - pipeline-maven.yaml
+  - pipeline-node.yaml

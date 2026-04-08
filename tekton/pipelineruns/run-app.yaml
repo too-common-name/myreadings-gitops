@@ -4,10 +4,10 @@ metadata:
   generateName: myreadings-app-
   labels:
     app.kubernetes.io/part-of: myreadings
-    tekton.dev/pipeline: myreadings-build
+    tekton.dev/pipeline: myreadings-maven-build
 spec:
   pipelineRef:
-    name: myreadings-build
+    name: myreadings-maven-build
   serviceAccountName: myreadings-pipeline
   params:
     - name: git-url

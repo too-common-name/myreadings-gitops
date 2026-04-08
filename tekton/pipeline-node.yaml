@@ -1,0 +1,139 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: myreadings-node-build
+  labels:
+    app.kubernetes.io/part-of: myreadings
+spec:
+  params:
+    - name: git-url
+      type: string
+      description: Source code repository URL
+    - name: git-revision
+      type: string
+      default: main
+    - name: dockerfile-path
+      type: string
+      default: ./Dockerfile
+    - name: context-dir
+      type: string
+      default: "."
+    - name: image-name
+      type: string
+      description: "Target image name (e.g. myreadings-ui)"
+    - name: image-base-ref
+      type: string
+      description: "Base image ref in the deployment YAML (e.g. quay.io/too-common-name/myreadings-ui)"
+    - name: gitops-repo-url
+      type: string
+      default: https://github.com/too-common-name/myreadings-gitops.git
+    - name: overlay-path
+      type: string
+      default: overlays/dev
+
+  workspaces:
+    - name: source
+      description: Shared workspace for source code
+    - name: git-credentials
+      description: Secret with GitHub credentials for gitops repo push
+
+  tasks:
+    - name: clone-source
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: git-clone
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: URL
+          value: $(params.git-url)
+        - name: REVISION
+          value: $(params.git-revision)
+        - name: DEPTH
+          value: "0"
+      workspaces:
+        - name: output
+          workspace: source
+
+    - name: build-and-push
+      runAfter:
+        - clone-source
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: IMAGE
+          value: "image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.image-name):$(tasks.clone-source.results.COMMIT)"
+        - name: DOCKERFILE
+          value: $(params.dockerfile-path)
+        - name: CONTEXT
+          value: $(params.context-dir)
+        - name: TLS_VERIFY
+          value: "false"
+      workspaces:
+        - name: source
+          workspace: source
+
+    - name: image-scan
+      runAfter:
+        - build-and-push
+      taskRef:
+        name: acs-image-scan
+      params:
+        - name: IMAGE
+          value: "image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.image-name):$(tasks.clone-source.results.COMMIT)"
+
+    - name: update-gitops
+      runAfter:
+        - image-scan
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: git-cli
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: GIT_USER_NAME
+          value: tekton-pipeline
+        - name: GIT_USER_EMAIL
+          value: tekton@myreadings.local
+        - name: GIT_SCRIPT
+          value: |
+            COMMIT_SHA="$(tasks.clone-source.results.COMMIT)"
+            INTERNAL_IMAGE="image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.image-name)"
+            BASE_REF="$(params.image-base-ref)"
+
+            cd /tmp
+            git clone $(params.gitops-repo-url) gitops
+            cd gitops/$(params.overlay-path)
+
+            if grep -q "name: ${BASE_REF}" kustomization.yaml; then
+              sed -i "\%name: ${BASE_REF}%{n;s|newName: .*|newName: ${INTERNAL_IMAGE}|;n;s|newTag: .*|newTag: ${COMMIT_SHA}|}" kustomization.yaml
+            elif grep -q "^images:" kustomization.yaml; then
+              sed -i "/^images:/a\\- name: ${BASE_REF}\n  newName: ${INTERNAL_IMAGE}\n  newTag: ${COMMIT_SHA}" kustomization.yaml
+            else
+              printf "\nimages:\n- name: %s\n  newName: %s\n  newTag: %s\n" "${BASE_REF}" "${INTERNAL_IMAGE}" "${COMMIT_SHA}" >> kustomization.yaml
+            fi
+
+            cat kustomization.yaml
+            git add .
+            git commit -m "ci: update $(params.image-name) to ${COMMIT_SHA:0:7}"
+            git push origin main
+      workspaces:
+        - name: source
+          workspace: source
+        - name: basic-auth
+          workspace: git-credentials

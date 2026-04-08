@@ -4,10 +4,10 @@ metadata:
   generateName: myreadings-ui-
   labels:
     app.kubernetes.io/part-of: myreadings
-    tekton.dev/pipeline: myreadings-build
+    tekton.dev/pipeline: myreadings-node-build
 spec:
   pipelineRef:
-    name: myreadings-build
+    name: myreadings-node-build
   serviceAccountName: myreadings-pipeline
   params:
     - name: git-url
@@ -24,8 +24,6 @@ spec:
       value: quay.io/too-common-name/myreadings-ui
     - name: overlay-path
       value: overlays/dev
-    - name: test-enabled
-      value: "false"
   workspaces:
     - name: source
       volumeClaimTemplate:

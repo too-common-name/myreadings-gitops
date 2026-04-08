@@ -52,16 +52,17 @@ MyReadings is a Quarkus-based modular monolith being incrementally decomposed in
 │   └── roles/
 │       ├── ocp_keycloak_config/
 │       └── ocp_rabbitmq_config/
-└── tekton/                         # CI pipeline, tasks, RBAC
+└── tekton/                         # CI pipelines, tasks, RBAC
     ├── kustomization.yaml
     ├── rbac.yaml                   # ServiceAccount + image-builder RoleBinding
     ├── task-maven-test.yaml        # Maven test/lint (no Docker needed)
     ├── task-maven-test-dind.yaml   # Maven test with DinD sidecar (Testcontainers)
     ├── task-acs-image-scan.yaml    # ACS image scan (graceful skip if not configured)
-    ├── pipeline.yaml               # Reusable parameterized pipeline
+    ├── pipeline-maven.yaml         # Pipeline for Java/Quarkus services
+    ├── pipeline-node.yaml          # Pipeline for Node.js apps (UI)
     └── pipelineruns/
-        ├── run-app.yaml            # PipelineRun for the monolith
-        └── run-ui.yaml             # PipelineRun for the UI (uses Dockerfile.ocp)
+        ├── run-app.yaml            # PipelineRun for the monolith (maven pipeline)
+        └── run-ui.yaml             # PipelineRun for the UI (node pipeline)
 ```
 
 ## Prerequisites
@@ -152,7 +153,9 @@ Keycloak and RabbitMQ configuration runs as Kubernetes Jobs using the custom Ans
 
 ### CI (Tekton)
 
-A single reusable Pipeline (`myreadings-build`) handles all components. The pipeline has seven stages:
+There are two pipelines, one per build archetype:
+
+**`myreadings-maven-build`** — for Java/Quarkus services (monolith, user-service):
 
 ```
 clone ─┬─ lint (checkstyle)  ─┬─ build+push ─┬─ integration tests ─┬─ update gitops
@@ -163,9 +166,17 @@ clone ─┬─ lint (checkstyle)  ─┬─ build+push ─┬─ integration te
 - **Unit tests** run in parallel with lint for fast feedback. Pure Mockito/JUnit tests only — no Docker required
 - **Build** uses `buildah` with the app's multi-stage Dockerfile, pushes to the OpenShift internal registry tagged with the commit SHA
 - **Integration tests** and **image scan** run in parallel after the build, both gating the promotion step
-- **Update gitops** clones this repo, appends the new image reference to the Kustomize overlay's `images` section, commits and pushes — which triggers Argo CD to deploy
+- **Update gitops** clones this repo, updates the image reference in the Kustomize overlay's `images` section, commits and pushes — which triggers Argo CD to deploy
 
-Images are always tagged with the full commit SHA (no `:latest`).
+**`myreadings-node-build`** — for Node.js apps (UI):
+
+```
+clone ─── build+push ─── image scan (ACS) ─── update gitops
+```
+
+Focused pipeline with no Maven steps. The UI is built via `Dockerfile.ocp` (multi-stage: `npm run build` then Node.js Express server). Ready for future `npm test` / `eslint` steps when needed.
+
+Both pipelines tag images with the full commit SHA (no `:latest`).
 
 #### Testcontainers / DinD limitation
 
@@ -203,11 +214,17 @@ The URL follows the OCP Route pattern `https://{route-name}-{namespace}.apps.{cl
 
 On OCP the UI runs a Node.js Express server (`Dockerfile.ocp` + `server.js`) instead of nginx:
 
-- **API proxy**: `/api/*` requests are proxied to backend services via internal K8s DNS -- no backend Route needed, no CORS
+- **API proxy**: `/api/*` requests are proxied to backend services via internal K8s DNS — no backend Route needed, no CORS. Uses `http-proxy-middleware` v3 with `pathFilter` to preserve the full request path
 - **Dynamic config**: `GET /config.js` is generated at runtime by deriving the Keycloak Route URL from the request's `Host` header and the pod's `NAMESPACE` env var (Kubernetes Downward API)
+- **Health check**: `GET /healthz` returns `{ "status": "UP" }`, used by readiness and liveness probes
 - **SPA fallback**: all other requests serve the Vue app's `index.html`
 
 For local development (`docker-compose`), the original `Dockerfile` with nginx is used unchanged.
+
+### Health checks
+
+- **Backend (Quarkus)**: Uses the `quarkus-smallrye-health` extension. Kubernetes probes hit `/q/health/ready` (readiness), `/q/health/live` (liveness), and `/q/health/started` (startup). The startup probe has a generous failure threshold to accommodate Quarkus boot time
+- **UI (Node)**: A lightweight `/healthz` endpoint returns a JSON status response. Probes use this instead of `/` to avoid serving the full SPA HTML on every check
 
 ## Getting started
 
@@ -232,27 +249,29 @@ See the Secrets section in Prerequisites above.
 Trigger a Tekton PipelineRun for each component:
 
 ```bash
-oc create -f tekton/pipelineruns/run-app.yaml -n myreadings-dev
-oc create -f tekton/pipelineruns/run-ui.yaml -n myreadings-dev
+oc create -f tekton/pipelineruns/run-app.yaml -n myreadings-dev   # Maven pipeline
+oc create -f tekton/pipelineruns/run-ui.yaml -n myreadings-dev    # Node pipeline
 ```
 
-The pipeline will build, test, scan, and push the image, then automatically update the Kustomize overlay to trigger an Argo CD deployment. The UI pipeline uses `Dockerfile.ocp` (Node server) and skips Maven tests.
+Each pipeline builds, pushes the image to the internal registry, runs its quality gates, and commits the new image tag to this gitops repo — triggering Argo CD to deploy.
 
 ## Container images
 
-| Component | Base image ref | Built by |
-|-----------|---------------|----------|
-| Monolith | `quay.io/too-common-name/myreadings-app` | Tekton pipeline |
-| UI | `quay.io/too-common-name/myreadings-ui` | Tekton pipeline |
-| Keycloak (custom) | `quay.io/rh-ee-drossi/myreadings-keycloak:latest` | Manual build |
-| Ansible EE | `quay.io/rh-ee-drossi/myreadings-ee:latest` | Manual build |
+| Component | Base image ref | Built by | Pipeline |
+|-----------|---------------|----------|----------|
+| Monolith | `quay.io/too-common-name/myreadings-app` | Tekton | `myreadings-maven-build` |
+| UI | `quay.io/too-common-name/myreadings-ui` | Tekton | `myreadings-node-build` |
+| Keycloak (custom) | `quay.io/rh-ee-drossi/myreadings-keycloak:latest` | Manual | — |
+| Ansible EE | `quay.io/rh-ee-drossi/myreadings-ee:latest` | Manual | — |
 
-The Tekton pipeline pushes images to the internal registry with commit SHA tags. The Kustomize overlay maps the base image refs to the internal registry images.
+Tekton pushes images to the OpenShift internal registry with commit SHA tags. The Kustomize overlay maps the base image refs to the internal registry images.
 
 ## Known limitations and tech debt
 
-- **Testcontainers in CI**: JPA and controller integration tests are excluded from the pipeline due to the `pipelines-scc` restriction. The `maven-test-dind` task is ready for when the cluster allows privileged containers.
+- **Testcontainers in CI**: JPA and controller integration tests are excluded from the Maven pipeline due to the `pipelines-scc` restriction. The `maven-test-dind` task is ready for when the cluster allows privileged containers.
 - **Checkstyle violations**: The project has pre-existing checkstyle violations. The lint step currently reports but does not fail the build. Flip `failOnViolation` to `true` once violations are cleaned up.
+- **No frontend tests in CI**: The Node pipeline does not run `npm test` or linting yet. These steps can be added as custom Tekton tasks when the project adds frontend tests.
 - **Dockerfiles use fully qualified image names**: Required by buildah on OpenShift, which enforces short-name resolution and cannot prompt for a registry without a TTY (e.g. `docker.io/library/maven:3.9-eclipse-temurin-21`).
 - **OIDC issuer is per-cluster**: The `QUARKUS_OIDC_TOKEN_ISSUER` env var must match the external Keycloak Route URL. When moving to a new cluster, update `overlays/dev/patches/monolith-oidc-issuer.yaml` with the new apps domain.
 - **RHBK operator Ingress has no host**: The RHBK operator creates a Kubernetes Ingress without a `host` field, so OpenShift doesn't auto-generate a usable Route. An explicit Route is included in `base/keycloak/route.yaml`. The operator's Ingress is disabled via `spec.ingress.enabled: false` in the Keycloak CR.
+- **`quarkus.oidc.token.issuer` in source**: The `application.properties` ships a local-dev issuer (`http://localhost:8080/...`) that is wrong on OCP. It should be moved to the `%dev` profile in a future refactor so the env var override is no longer needed.

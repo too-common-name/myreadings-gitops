@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  name: myreadings-build
+  name: myreadings-maven-build
   labels:
     app.kubernetes.io/part-of: myreadings
 spec:
@@ -30,10 +30,6 @@ spec:
     - name: overlay-path
       type: string
       default: overlays/dev
-    - name: test-enabled
-      type: string
-      default: "true"
-      description: "Set to 'false' to skip tests (e.g. for UI builds)"
 
   workspaces:
     - name: source
@@ -42,7 +38,6 @@ spec:
       description: Secret with GitHub credentials for gitops repo push
 
   tasks:
-    # 1. Clone source
     - name: clone-source
       taskRef:
         resolver: cluster
@@ -64,14 +59,9 @@ spec:
         - name: output
           workspace: source
 
-    # 2a. Checkstyle lint -- runs in parallel with unit-tests
     - name: lint
       runAfter:
         - clone-source
-      when:
-        - input: $(params.test-enabled)
-          operator: in
-          values: ["true"]
       taskRef:
         name: maven-test
       params:
@@ -86,15 +76,9 @@ spec:
         - name: source
           workspace: source
 
-    # 2b. Unit tests -- fast feedback, no Docker needed
-    #     Excludes @QuarkusTest tests that need Testcontainers.
     - name: unit-tests
       runAfter:
         - clone-source
-      when:
-        - input: $(params.test-enabled)
-          operator: in
-          values: ["true"]
       taskRef:
         name: maven-test
       params:
@@ -109,7 +93,6 @@ spec:
         - name: source
           workspace: source
 
-    # 3. Build image and push to internal registry
     - name: build-and-push
       runAfter:
         - lint
@@ -136,18 +119,9 @@ spec:
         - name: source
           workspace: source
 
-    # 4a. Integration tests -- gates promotion
-    # Testcontainers tests (Jpa*, *IntegrationTest) are excluded because
-    # OpenShift Pipelines enforces pipelines-scc which disallows privileged
-    # containers needed for DinD. The maven-test-dind task is ready for
-    # clusters that allow it (set scc.default: privileged in TektonConfig).
     - name: integration-tests
       runAfter:
         - build-and-push
-      when:
-        - input: $(params.test-enabled)
-          operator: in
-          values: ["true"]
       taskRef:
         name: maven-test
       params:
@@ -162,7 +136,6 @@ spec:
         - name: source
           workspace: source
 
-    # 4b. Image security scan (ACS) -- runs in parallel with integration-tests
     - name: image-scan
       runAfter:
         - build-and-push
@@ -172,7 +145,6 @@ spec:
         - name: IMAGE
           value: "image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.image-name):$(tasks.clone-source.results.COMMIT)"
 
-    # 5. Update gitops overlay -- only after ALL quality gates pass
     - name: update-gitops
       runAfter:
         - integration-tests
