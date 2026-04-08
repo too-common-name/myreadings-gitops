@@ -15,15 +15,30 @@ spec:
       default: "."
   workspaces:
     - name: source
-    - name: maven-cache
+    - name: maven-settings
       optional: true
   steps:
-    - name: maven-test
+    - name: setup-settings
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      script: |
+        #!/bin/sh
+        mkdir -p /root/.m2
+        if [ "$(workspaces.maven-settings.bound)" = "true" ] && \
+           [ -f "$(workspaces.maven-settings.path)/settings.xml" ]; then
+          cp "$(workspaces.maven-settings.path)/settings.xml" /root/.m2/settings.xml
+          echo "Maven settings.xml installed"
+        else
+          echo "No custom Maven settings"
+        fi
+      volumeMounts:
+        - name: m2-cache
+          mountPath: /root/.m2
+    - name: maven-run
       image: docker.io/library/maven:3.9-eclipse-temurin-21
       workingDir: $(workspaces.source.path)/$(params.CONTEXT_DIR)
-      args: ["$(params.GOALS[*])"]
       command:
         - mvn
+      args: ["$(params.GOALS[*])"]
       volumeMounts:
         - name: m2-cache
           mountPath: /root/.m2

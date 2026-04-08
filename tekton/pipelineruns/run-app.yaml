@@ -36,3 +36,6 @@ spec:
     - name: git-credentials
       secret:
         secretName: github-token
+    - name: maven-settings
+      secret:
+        secretName: maven-settings

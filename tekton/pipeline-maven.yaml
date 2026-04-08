@@ -36,6 +36,9 @@ spec:
       description: Shared workspace for source code
     - name: git-credentials
       description: Secret with GitHub credentials for gitops repo push
+    - name: maven-settings
+      description: Secret with Maven settings.xml for GitHub Packages auth
+      optional: true
 
   tasks:
     - name: clone-source
@@ -75,6 +78,8 @@ spec:
       workspaces:
         - name: source
           workspace: source
+        - name: maven-settings
+          workspace: maven-settings
 
     - name: unit-tests
       runAfter:
@@ -92,11 +97,40 @@ spec:
       workspaces:
         - name: source
           workspace: source
+        - name: maven-settings
+          workspace: maven-settings
 
-    - name: build-and-push
+    - name: prepare-build
       runAfter:
         - lint
         - unit-tests
+      taskSpec:
+        workspaces:
+          - name: source
+          - name: maven-settings
+            optional: true
+        steps:
+          - name: copy-settings
+            image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+            script: |
+              #!/bin/sh
+              if [ "$(workspaces.maven-settings.bound)" = "true" ] && \
+                 [ -f "$(workspaces.maven-settings.path)/settings.xml" ]; then
+                cp "$(workspaces.maven-settings.path)/settings.xml" \
+                   "$(workspaces.source.path)/settings.xml"
+                echo "settings.xml copied to build context"
+              else
+                echo "No Maven settings to inject"
+              fi
+      workspaces:
+        - name: source
+          workspace: source
+        - name: maven-settings
+          workspace: maven-settings
+
+    - name: build-and-push
+      runAfter:
+        - prepare-build
       taskRef:
         resolver: cluster
         params:
@@ -135,6 +169,8 @@ spec:
       workspaces:
         - name: source
           workspace: source
+        - name: maven-settings
+          workspace: maven-settings
 
     - name: image-scan
       runAfter:
