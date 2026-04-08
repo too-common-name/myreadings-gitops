@@ -50,3 +50,4 @@ spec:
     - name: keycloak-user
       databases:
         - keycloak_db
+      options: "SUPERUSER"
