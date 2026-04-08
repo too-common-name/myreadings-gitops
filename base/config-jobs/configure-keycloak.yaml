@@ -3,8 +3,7 @@ kind: Job
 metadata:
   name: configure-keycloak
   annotations:
-    argocd.argoproj.io/hook: PostSync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "2"
   labels:
     app.kubernetes.io/part-of: myreadings
     app.kubernetes.io/component: config

@@ -33,3 +33,8 @@ metadata:
 spec:
   clusterSets:
     - default
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            myreadings: "true"
