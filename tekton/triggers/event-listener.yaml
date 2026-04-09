@@ -1,0 +1,59 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: myreadings-webhook
+  labels:
+    app.kubernetes.io/part-of: myreadings
+spec:
+  serviceAccountName: myreadings-trigger
+  triggers:
+    - name: app-push
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "eventTypes"
+              value: ["push"]
+        - ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: "body.repository.name == 'myreadings' && body.ref.startsWith('refs/heads/refactored')"
+      bindings:
+        - ref: github-push-binding
+      template:
+        ref: myreadings-app-trigger
+
+    - name: user-service-push
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "eventTypes"
+              value: ["push"]
+        - ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: "body.repository.name == 'myreadings_user_service' && body.ref.startsWith('refs/heads/main')"
+      bindings:
+        - ref: github-push-binding
+      template:
+        ref: myreadings-user-service-trigger
+
+    - name: ui-push
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "eventTypes"
+              value: ["push"]
+        - ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: "body.repository.name == 'myreadings_ui' && body.ref.startsWith('refs/heads/main')"
+      bindings:
+        - ref: github-push-binding
+      template:
+        ref: myreadings-ui-trigger

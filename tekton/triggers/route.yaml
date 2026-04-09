@@ -1,0 +1,16 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: myreadings-webhook
+  labels:
+    app.kubernetes.io/part-of: myreadings
+spec:
+  to:
+    kind: Service
+    name: el-myreadings-webhook
+    weight: 100
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  port:
+    targetPort: http-listener

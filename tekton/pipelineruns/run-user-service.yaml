@@ -1,0 +1,41 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: myreadings-user-service-
+  labels:
+    app.kubernetes.io/part-of: myreadings
+    tekton.dev/pipeline: myreadings-maven-build
+spec:
+  pipelineRef:
+    name: myreadings-maven-build
+  serviceAccountName: myreadings-pipeline
+  params:
+    - name: git-url
+      value: https://github.com/too-common-name/myreadings_user_service.git
+    - name: git-revision
+      value: main
+    - name: dockerfile-path
+      value: src/main/docker/Dockerfile
+    - name: context-dir
+      value: "."
+    - name: image-name
+      value: myreadings-user-service
+    - name: image-base-ref
+      value: quay.io/too-common-name/myreadings-user-service
+    - name: overlay-path
+      value: overlays/dev
+  workspaces:
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
+    - name: git-credentials
+      secret:
+        secretName: github-token
+    - name: maven-settings
+      secret:
+        secretName: maven-settings

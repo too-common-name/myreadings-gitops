@@ -8,3 +8,11 @@ resources:
   - task-acs-image-scan.yaml
   - pipeline-maven.yaml
   - pipeline-node.yaml
+  # Triggers
+  - triggers/rbac.yaml
+  - triggers/trigger-binding.yaml
+  - triggers/tt-app.yaml
+  - triggers/tt-user-service.yaml
+  - triggers/tt-ui.yaml
+  - triggers/event-listener.yaml
+  - triggers/route.yaml
