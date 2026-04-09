@@ -17,6 +17,8 @@ spec:
       labels:
         app.kubernetes.io/name: myreadings-app
         app.kubernetes.io/part-of: myreadings
+      annotations:
+        proxy.istio.io/config: '{"holdApplicationUntilProxyStarts": true}'
     spec:
       containers:
         - name: myreadings-app
