@@ -15,7 +15,7 @@ data:
 
     CREATE TABLE IF NOT EXISTS books (
         book_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        isbn VARCHAR(20),
+        isbn VARCHAR(20) UNIQUE,
         title VARCHAR(255) NOT NULL,
         authors TEXT[],
         publication_date DATE,
@@ -39,8 +39,7 @@ data:
         )
     );
 
-    INSERT INTO books (isbn, title, authors, publication_date, publisher, description, page_count, cover_image_id, original_language, genre)
-    SELECT * FROM (VALUES
+    INSERT INTO books (isbn, title, authors, publication_date, publisher, description, page_count, cover_image_id, original_language, genre) VALUES
     ('9781401263119', 'Batman: The Dark Knight Returns', '{"Frank Miller"}', '1986-06-01', 'DC Comics', 'An aging Bruce Wayne returns to his role as Batman.', 208, 's3_url_todo', 'en', 'Comics'),
     ('9781401207526', 'Batman: Year One', '{"Frank Miller", "David Mazzucchelli"}', '1987-02-01', 'DC Comics', 'The early days of Batman''s career.', 144, 's3_url_todo', 'en', 'Comics'),
     ('9781401216672', 'Batman: The Killing Joke', '{"Alan Moore", "Brian Bolland"}', '1988-03-01', 'DC Comics', 'The Joker tries to drive Commissioner Gordon insane.', 64, 's3_url_todo', 'en', 'Comics'),
@@ -56,7 +55,7 @@ data:
     ('9781779513182', 'Batman: Last Knight on Earth', '{"Scott Snyder", "Greg Capullo"}', '2020-03-01', 'DC Comics', 'An aged Bruce Wayne wakes up in a dystopian future.', 216, 's3_url_todo', 'en', 'Comics'),
     ('9781779524058', 'Batman: Gotham by Gaslight', '{"Brian Augustyn", "Mike Mignola"}', '1989-01-01', 'DC Comics', 'Batman in Victorian-era Gotham City.', 48, 's3_url_todo', 'en', 'Comics'),
     ('9781401216221', 'Batman: The Man Who Laughs', '{"Ed Brubaker", "Doug Mahnke"}', '2005-02-01', 'DC Comics', 'A retelling of Batman''s first encounter with the Joker.', 64, 's3_url_todo', 'en', 'Comics'),
-    ('9781401232280', 'Batman: No Man''s Land Vol. 1', '{"Various"}', '1999-03-01', 'DC Comics', 'Gotham City is declared a "No Man''s Land" after an earthquake.', 368, 's3_url_todo', 'en', 'Comics'),
+    ('9781401232280', 'Batman: No Man''s Land Vol. 1', '{"Various"}', '1999-03-01', 'DC Comics', 'Gotham City is declared a No Man''s Land after an earthquake.', 368, 's3_url_todo', 'en', 'Comics'),
     ('9781401231450', 'Batman: Under the Red Hood', '{"Judd Winick", "Doug Mahnke"}', '2005-02-01', 'DC Comics', 'The return of a familiar face from Batman''s past.', 192, 's3_url_todo', 'en', 'Comics'),
     ('9781401232068', 'Batman: Black Mirror', '{"Scott Snyder", "Jock"}', '2011-02-01', 'DC Comics', 'Dick Grayson as Batman faces a terrifying new threat.', 160, 's3_url_todo', 'en', 'Comics'),
     ('9781401233423', 'Batman: Gates of Gotham', '{"Scott Snyder", "Kyle Higgins"}', '2011-09-01', 'DC Comics', 'A mystery involving Gotham''s oldest families.', 144, 's3_url_todo', 'en', 'Comics'),
@@ -65,7 +64,7 @@ data:
     ('9781401261037', 'Batman: Endgame', '{"Scott Snyder", "Greg Capullo"}', '2015-07-01', 'DC Comics', 'The Joker''s final attack on Batman.', 160, 's3_url_todo', 'en', 'Comics'),
     ('9781401262133', 'Batman: Superheavy', '{"Scott Snyder", "Greg Capullo"}', '2016-01-01', 'DC Comics', 'Jim Gordon becomes the new Batman.', 144, 's3_url_todo', 'en', 'Comics'),
     ('9781401276444', 'Batman: The Button', '{"Tom King", "Joshua Williamson"}', '2017-09-01', 'DC Comics', 'A crossover event with The Flash.', 96, 's3_url_todo', 'en', 'Comics'),
-    ('9781401270718', 'Batman: I Am Gotham', '{"Tom King", "David Finch"}', '2017-03-01', 'DC Comics', 'The beginning of the "I Am Gotham" storyline.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9781401270718', 'Batman: I Am Gotham', '{"Tom King", "David Finch"}', '2017-03-01', 'DC Comics', 'The beginning of the I Am Gotham storyline.', 144, 's3_url_todo', 'en', 'Comics'),
     ('9781401271326', 'Batman: The Rebirth Deluxe Edition Book 1', '{"Tom King", "Various"}', '2018-08-01', 'DC Comics', 'Collects the first twelve issues of the Batman Rebirth series.', 336, 's3_url_todo', 'en', 'Comics'),
     ('1563897385', 'Batman: Dark Victory', '{"Jeph Loeb", "Tim Sale"}', '1999-11-01', 'DC Comics', 'Sequel to The Long Halloween.', 384, 's3_url_todo', 'en', 'Comics'),
     ('9781401209001', 'Batman: Hush Returns', '{"A.J. Lieberman", "Dustin Nguyen"}', '2005-03-01', 'DC Comics', 'The return of Hush.', 144, 's3_url_todo', 'en', 'Comics'),
@@ -84,13 +83,13 @@ data:
     ('9780785134503', 'Amazing Spider-Man: Kraven''s Last Hunt', '{"J. M. DeMatteis", "Mike Zeck"}', '1987-10-01', 'Marvel Comics', 'Kraven''s ultimate confrontation with Spider-Man.', 144, 's3_url_todo', 'en', 'Comics'),
     ('9780785107866', 'Ultimate Spider-Man Vol. 1: Power & Responsibility', '{"Brian Michael Bendis", "Mark Bagley"}', '2000-12-01', 'Marvel Comics', 'A modern take on Spider-Man''s origins.', 184, 's3_url_todo', 'en', 'Comics'),
     ('9780785110620', 'Spider-Man: Blue', '{"Jeph Loeb", "Tim Sale"}', '2002-07-01', 'Marvel Comics', 'Peter Parker reflects on his lost love, Gwen Stacy.', 144, 's3_url_todo', 'en', 'Comics'),
-    ('9780785132158', 'The Amazing Spider-Man: Brand New Day', '{"Dan Slott", "Steve McNiven"}', '2008-01-01', 'Marvel Comics', 'The aftermath of "One More Day".', 304, 's3_url_todo', 'en', 'Comics'),
+    ('9780785132158', 'The Amazing Spider-Man: Brand New Day', '{"Dan Slott", "Steve McNiven"}', '2008-01-01', 'Marvel Comics', 'The aftermath of One More Day.', 304, 's3_url_todo', 'en', 'Comics'),
     ('9780785125044', 'The Amazing Spider-Man: Death of the Stacys', '{"Stan Lee", "Gil Kane"}', '1968-08-01', 'Marvel Comics', 'The storyline leading up to Gwen Stacy''s death.', 72, 's3_url_todo', 'en', 'Comics'),
     ('0785100385', 'The Amazing Spider-Man: Maximum Carnage', '{"Various"}', '1993-05-01', 'Marvel Comics', 'Spider-Man teams up with Venom to stop Carnage.', 480, 's3_url_todo', 'en', 'Comics'),
     ('9781302946531', 'Spider-Man: The Wedding Album', '{"Jim Shooter", "David Michelinie"}', '1987-08-01', 'Marvel Comics', 'Peter Parker marries Mary Jane Watson.', 96, 's3_url_todo', 'en', 'Comics'),
     ('9780785125525', 'Spider-Man: Back in Black', '{"J. Michael Straczynski", "Ron Garney"}', '2007-03-01', 'Marvel Comics', 'Spider-Man dons the black suit once more.', 240, 's3_url_todo', 'en', 'Comics'),
     ('9780785187981', 'The Amazing Spider-Man: Spider-Verse', '{"Dan Slott", "Olivier Coipel"}', '2015-04-01', 'Marvel Comics', 'All the Spider-Men from across the multiverse unite.', 368, 's3_url_todo', 'en', 'Comics'),
-    ('9780785198864', 'Spider-Man: Renew Your Vows', '{"Dan Slott", "Adam Kubert"}', '2016-06-01', 'Marvel Comics', 'Peter and Mary Jane are married in a world where Spider-Man''s identity is public.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9780785198864', 'Spider-Man: Renew Your Vows', '{"Dan Slott", "Adam Kubert"}', '2016-06-01', 'Marvel Comics', 'Peter and Mary Jane are married with a public Spider-Man identity.', 144, 's3_url_todo', 'en', 'Comics'),
     ('9780785199427', 'The Amazing Spider-Man: Worldwide Vol. 1', '{"Dan Slott", "Giuseppe Camuncoli"}', '2016-01-01', 'Marvel Comics', 'Peter Parker becomes a global entrepreneur as Spider-Man.', 136, 's3_url_todo', 'en', 'Comics'),
     ('9781302903268', 'The Amazing Spider-Man: The Clone Conspiracy', '{"Dan Slott", "Jim Cheung"}', '2017-01-01', 'Marvel Comics', 'The return of a long-lost character with a shocking plan.', 168, 's3_url_todo', 'en', 'Comics'),
     ('9781302908911', 'The Amazing Spider-Man: Worldwide Vol. 3', '{"Dan Slott", "Stuart Immonen"}', '2017-05-01', 'Marvel Comics', 'Spider-Man continues his global adventures.', 136, 's3_url_todo', 'en', 'Comics'),
@@ -104,7 +103,7 @@ data:
     ('9781302900595', 'Spider-Man: Carnage Classic', '{"David Michelinie", "Mark Bagley"}', '1991-05-01', 'Marvel Comics', 'The debut of Carnage.', 168, 's3_url_todo', 'en', 'Comics'),
     ('9780785100478', 'Spider-Man: Revenge of the Sinister Six', '{"Erik Larsen"}', '1991-01-01', 'Marvel Comics', 'The Sinister Six reunite.', 144, 's3_url_todo', 'en', 'Comics'),
     ('0871359634', 'Spider-Man: The Cosmic Adventures of Spider-Man', '{"Various"}', '1992-01-01', 'Marvel Comics', 'Spider-Man in space!', 288, 's3_url_todo', 'en', 'Comics'),
-    ('9781302916213', 'Spider-Man 2099 vs. Venom 2099', '{"Peter David", "Jonathan Peterson" , "Mark Waid", "Len Wein"}', '1993-01-01', 'Marvel Comics', 'Spider-Man in the year 2099.', 144, 's3_url_todo', 'en', 'Comics'),
+    ('9781302916213', 'Spider-Man 2099 vs. Venom 2099', '{"Peter David", "Jonathan Peterson", "Mark Waid", "Len Wein"}', '1993-01-01', 'Marvel Comics', 'Spider-Man in the year 2099.', 144, 's3_url_todo', 'en', 'Comics'),
     ('9780785102021', 'Spider-Man: The Lost Years', '{"J. M. DeMatteis", "John Romita Jr."}', '1995-01-01', 'Marvel Comics', 'A story set between the Ben Reilly saga.', 128, 's3_url_todo', 'en', 'Comics'),
     ('9780785108030', 'Spider-Man: Tangled Web Vol. 1', '{"Greg Rucka"}', '2001-06-01', 'Marvel Comics', 'Spider-Man stories told from the perspectives of other characters.', 224, 's3_url_todo', 'en', 'Comics'),
     ('9780785126652', 'Spider-Man: Reign', '{"Kaare Andrews"}', '2006-12-01', 'Marvel Comics', 'An older Peter Parker returns as Spider-Man in a dystopian future.', 128, 's3_url_todo', 'en', 'Comics'),
@@ -116,13 +115,12 @@ data:
     ('9781804911952', 'The Amazing Spider-Man Vol. 6: Gang War', '{"Zeb Wells", "John Romita Jr."}', '2024-02-01', 'Marvel Comics', 'Gang wars erupt across New York and Spider-Man is caught in the middle.', 136, 's3_url_todo', 'en', 'Comics'),
     ('9780596555139', 'Linux System Programming, 2nd Edition', '{"Robert Love"}', '2023-06-20', 'O''Reilly Media', 'A deep dive into Linux system calls, memory management, and kernel interaction.', 456, 's3_url_todo', 'en', 'Technical Manual'),
     ('9781492043782', 'Istio: Up and Running', '{"Lee Calcote", "Zack Butcher"}', '2023-10-12', 'O''Reilly Media', 'Manage microservices traffic, security, and observability with Istio on Kubernetes and OpenShift.', 260, 's3_url_todo', 'en', 'Technical Manual'),
-    ('9783897211292', 'Learning Python', '{"Mark Lutz", "David Ascher"}', '2009-01-09', 'O''Reilly Media', 'Describes the features of the Python 2.5 programming language, covering such topics as types and operations, statements and syntax, functions, modules, classes and OOP, and exceptions and tools.', 1162, 's3_url_todo', 'en', 'Technical Manual'),
-    ('9781565920606', 'Learning the Unix Operating System: A Concise Guide for the New User', '{"Jerry Peek", "Grace Todino", "John Strang"}', '1993-01-01', 'O''Reilly Media', 'A concise guide for new Unix users, focusing on the bash shell, internet usage (ftp, mail, web), and security basics.', 174, 's3_url_todo', 'en', 'Technical Manual'),
-    ('9780596529680', 'Building Embedded Linux Systems', '{"Karim Yaghmour", "Jon Masters", "Gilad Ben-Yossef", "Philippe Gerum"}', '2008-01-01', 'O''Reilly Media', 'Building Embedded Linux Systems is the first in-depth, hard-core guide to putting together an embedded system based on the Linux kernel.', 439, 's3_url_todo', 'en', 'Technical Manual'),
-    ('0596006489', 'Learning GNU Emacs', '{"Debra Cameron", "James Elliott", "Marc Loy", "Eric S. Raymond", "Bill Rosenblatt"}', '2005-01-18', 'O''Reilly Media', 'A thorough guide to the GNU Emacs editor, taking users from basic text editing to moderately complicated customization and programming.', 509, 's3_url_todo', 'en', 'Technical Manual'),
-    ('9781098103989', 'Python For Data Analysis', '{"Wes McKinney"}', '2022-09-20', 'O''Reilly Media', 'The definitive handbook for manipulating, processing, cleaning, and crunching datasets in Python, updated for Python 3.10 and pandas 1.4, packed with practical case studies.', 582, 's3_url_todo', 'en', 'Technical Manual');
-    ) AS v(isbn, title, authors, publication_date, publisher, description, page_count, cover_image_id, original_language, genre)
-    WHERE NOT EXISTS (SELECT 1 FROM books LIMIT 1);
+    ('9783897211292', 'Learning Python', '{"Mark Lutz", "David Ascher"}', '2009-01-09', 'O''Reilly Media', 'Describes the features of the Python 2.5 programming language.', 1162, 's3_url_todo', 'en', 'Technical Manual'),
+    ('9781565920606', 'Learning the Unix Operating System', '{"Jerry Peek", "Grace Todino", "John Strang"}', '1993-01-01', 'O''Reilly Media', 'A concise guide for new Unix users, focusing on the bash shell and security basics.', 174, 's3_url_todo', 'en', 'Technical Manual'),
+    ('9780596529680', 'Building Embedded Linux Systems', '{"Karim Yaghmour", "Jon Masters", "Gilad Ben-Yossef", "Philippe Gerum"}', '2008-01-01', 'O''Reilly Media', 'The first in-depth guide to putting together an embedded system based on the Linux kernel.', 439, 's3_url_todo', 'en', 'Technical Manual'),
+    ('0596006489', 'Learning GNU Emacs', '{"Debra Cameron", "James Elliott", "Marc Loy", "Eric S. Raymond", "Bill Rosenblatt"}', '2005-01-18', 'O''Reilly Media', 'A thorough guide to the GNU Emacs editor.', 509, 's3_url_todo', 'en', 'Technical Manual'),
+    ('9781098103989', 'Python For Data Analysis', '{"Wes McKinney"}', '2022-09-20', 'O''Reilly Media', 'The definitive handbook for manipulating, processing, cleaning, and crunching datasets in Python.', 582, 's3_url_todo', 'en', 'Technical Manual')
+    ON CONFLICT (isbn) DO NOTHING;
 
     -- ============================================================
     -- users_db: schema only (users are created via Keycloak registration)
