@@ -52,6 +52,14 @@ spec:
       kind: TriggerBinding
     - group: triggers.tekton.dev
       kind: TriggerTemplate
+    - group: security.istio.io
+      kind: PeerAuthentication
+    - group: security.istio.io
+      kind: AuthorizationPolicy
+    - group: networking.istio.io
+      kind: VirtualService
+    - group: networking.istio.io
+      kind: DestinationRule
 
   roles:
     - name: myreadings-deployer

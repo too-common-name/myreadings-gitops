@@ -18,4 +18,5 @@ resources:
   - ui/deployment.yaml
   - ui/service.yaml
   - ui/route.yaml
+  - service-mesh/peer-authentication.yaml
   - config-jobs/
