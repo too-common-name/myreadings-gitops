@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - postgres/scc-anyuid.yaml
   - postgres/init-sql.yaml
   - postgres/postgrescluster.yaml
   - keycloak/keycloak.yaml
