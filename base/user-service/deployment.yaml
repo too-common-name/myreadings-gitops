@@ -76,15 +76,23 @@ spec:
                   name: myreadings-rabbitmq-default-user
                   key: password
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /q/health/ready
               port: 8083
             initialDelaySeconds: 20
             periodSeconds: 10
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /q/health/live
               port: 8083
             initialDelaySeconds: 30
             periodSeconds: 15
+          startupProbe:
+            httpGet:
+              path: /q/health/started
+              port: 8083
+            failureThreshold: 20
+            periodSeconds: 5
           resources:
             requests:
               cpu: 200m
