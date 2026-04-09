@@ -121,6 +121,21 @@ spec:
             name: rabbitmq-cluster-operator
             source: community-operators
             sourceNamespace: openshift-marketplace
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1beta1
+        kind: OperatorPolicy
+        metadata:
+          name: servicemesh-operator-policy
+        spec:
+          severity: high
+          remediationAction: enforce
+          complianceType: musthave
+          upgradeApproval: Automatic
+          subscription:
+            channel: stable
+            name: servicemeshoperator3
+            source: redhat-operators
+            sourceNamespace: openshift-marketplace
     # ================================================================
     # Tekton pruner — auto-cleanup of completed PipelineRuns/TaskRuns
     # ================================================================
